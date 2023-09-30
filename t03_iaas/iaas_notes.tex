@@ -1,0 +1,342 @@
+\chapter{IaaS}
+
+Infrastructural services consist of compute, low-level storage and the networking required to connect them.
+Compute is provided on AWS using a service called EC2.
+Virtual Machines on EC2 are called Instances.
+
+Instances are grouped into a virtual network called a VPC.
+VPCs are important --- without them we wouldn't be able to connect to our virtual machines at all.
+
+
+\section{Infrastructure groups}
+\label{sec:infrastructure-groups}
+
+The major ``full service'' cloud providers separate their infrastructure
+geographically. This is done for two reasons. Firstly it lets cloud
+providers separate services in different geographical regions from each
+other for legal and business reasons. Secondly it facilitates redundancy
+in case of failures.
+
+\subsection{Regions}
+\label{sec:regions}
+
+\textbf{Regions} are \textbf{designed to separate data and resources} for business and legal reasons.
+
+\begin{itemize}
+\item
+  Regions function independently of each other. Essentially they are
+  different instances of the cloud provider's infrastructure.
+\item
+  Regions usually chosen such that legal environment is similar across
+  them: e.g.~varied FOI, GDPR, HIPAA, COPPA, data siphoning regulations.
+\item
+  Provider may introduce and update services to different regions at
+  different times.
+\item
+  Pricing may vary across regions for the same services.
+\item
+  Most cloud providers identify each region with both a human readable
+  name like ``EU (Ireland)'' and a code name like \texttt{eu-west-1}. We
+  will in class use only the code names for the most part.
+\item
+  \textbf{Must consider region when deploying most services!}
+\end{itemize}
+Also need to consider:
+\begin{description}
+\item[Non-geographic regions]
+are purpose-specific rather than geographical, like AWS GovCloud.
+\item[Geography]
+is a region-grouping that Azure use. AWS doesn't have a multi-region
+grouping concept.
+\end{description}
+\begin{itemize}
+\item
+  Legal environment is normally consistent across all regions in a
+  Geography.
+\end{itemize}
+
+\subsubsection{Region listing}
+A list of regions can be accessed in the CLI using
+\begin{verbatim}
+aws ec2 describe-regions
+\end{verbatim}
+
+
+\subsection{Availability zones}
+\label{sec:availability-zones}
+
+\textbf{Availability zones} are a \textbf{technical construct} to tolerate failures in physical
+infrastructure.
+
+\begin{itemize}
+\item
+  Each AZ normally consists of \(\ge 1\) data centres, each internally
+  redundant. The data centres in an AZ are connected to each other by
+  low-latency highly-redundant network links.
+\item
+  AZs are identified only by a code name derived from their region code
+  name. For the \texttt{eu-west-1} region the corresponding AZs are
+  \texttt{eu-west-1a}, \texttt{eu-west-1b} and \texttt{eu-west-1c}.
+\item
+  Note that the AZ code \texttt{a,\ b,\ c} mappings to physical AZs
+  \emph{are not} consistent across different AWS accounts. This is to
+  balance usage across AZs. (Many people will just choose the \texttt{a}
+  AZ since it appears first in the list.)
+\item
+  \textbf{In general, we need to consider AZs when deploying IaaS
+  services but NOT PaaS.}
+\end{itemize}
+
+\subsubsection{AZ listing}
+
+A list of availability zones can be accessed in the command-line interface:
+\begin{verbatim}
+aws ec2 describe-availability-zones
+\end{verbatim}
+
+
+
+\subsection{Infrastructure maps}
+\label{sec:infrastructure-maps}
+
+The providers all do a better job on constantly updating their global
+infrastructure maps than any lecture notes will:
+
+\begin{itemize}
+\item
+  \textbf{AWS:}
+  \url{https://aws.amazon.com/about-aws/global-infrastructure/}
+\item
+  \textbf{Google Cloud:} has a similar breakdown of regions and AZs to
+  AWS. \url{https://cloud.google.com/about/locations}
+\item
+  \textbf{Azure:}
+  \url{https://azure.microsoft.com/en-us/global-infrastructure/}
+\end{itemize}
+
+
+
+\section{Compute instances}
+\label{sec:compute-instances}
+
+The backbone IaaS compute service offered by AWS is Elastic Compute 2.
+This allows you to create Virtual Machines on the AWS platform.
+Many of their other services rely on EC2.
+Other major cloud platforms (Azure, IBM, Google) all offer a basic virtual-machine compute service.
+Virtual Machines created on AWS are known as EC2 instances (or just instances).
+
+\subsection{EC2 instances}
+\label{sec:ec2-instances}
+
+To launch an instance, we must decide:
+
+\begin{description}
+\item[Instance Type]
+  which sets the hardware configuration.
+  Includes CPU family, numberof cores, clock speed, RAM.
+\item[Operating System]
+  template as available as an Amazon Machine Image (or AMI) that will be used to clone the image from.
+\item[Storage:]
+  The instance's virtual hard disk.
+\item[VPC and Subnet]
+  that the instance will be launched into.
+\item[Security group]
+  which defines what traffic is allowed in/out of individual EC2
+  instances.
+  Try to use shared/template ones rather than one per instance.
+\end{description}
+
+\subsection{Amazon Machine Image (AMI)}
+\label{sec:amazon-machine-image-ami}
+
+\begin{itemize}
+\item
+  On physical servers (and when dealing with on-site virtualisation
+  systems) we often install an OS using an installer disk and work
+  through the steps of the installer.
+\item
+  Cloud compute instances are normally created by cloning an image and
+  running some minor post-installation tasks.
+\item
+  AWS uses the Amazon Machine Image (AMI) to clone a compute instance's
+  virtual hard disk from.
+\end{itemize}
+
+\subsection{Amazon Linux}\label{amazon-linux}
+
+There are a few different Linux distributions on AWS as AMIs, (as well as Windows).
+One possible Linux flavour is Amazon Linux which is stripped-down for use as a cloud server and is maintained by AWS:
+
+\begin{itemize}
+\item
+  By default, a user named \texttt{ec2-user} is provisioned. You can of
+  course set up other users as you wish as on any OS.
+\item
+  It uses the RedHat \texttt{yum} package manager rather than
+  \texttt{apt} as in Ubuntu / Debian. \emph{(You should be comfortable
+  at this stage working with similar non-identical tools to broaden your
+  experience and horizon!)}
+\end{itemize}
+
+\subsection{Remote Access}\label{remote-access}
+
+Unlike some virtualisation solutions (e.g.~Xen server, Hyper-V), AWS provide no emulated Keyboard / Video / Mouse (KVM).
+All operations must be carried out using remote access protocols like Secure Shell (SSH) or Remote Desktop Protocol.
+
+\subsection{Key pairs}
+\label{sec:key-pairs}
+
+Some AMIs have a default username/password, but most including Amazon
+Linux use a key-pair:
+
+\begin{enumerate}
+\item
+  You generate a public / private key pair using \texttt{ssh-keygen}
+\item
+  You use the public key when creating EC2 instances.
+\item
+  Log in using \texttt{ssh} using your private key.
+  Username for Amazon Linux is \texttt{ec2-user}.
+\end{enumerate}
+
+
+\section{Security groups}
+\label{security-groups}
+
+Security groups control a per-instance firewall that limits traffic into or out of each instance.
+Each instance may have one or more security groups attached.
+
+\subsection{Default security group}
+
+Every instance created can have a default security group attached butthis leads to a few problems:
+
+\begin{itemize}
+\item
+  Hard to get an overview of allowed/denied traffic to instances
+  (security risk)
+\item
+  Hard to reconfigure allowed/denied traffic to a number of instances
+  (time consuming, nuisance)
+\end{itemize}
+
+Instead it is preferable to create a security group and attach it as needed to instances in our VPC.
+
+\subsection{Ingress rules}\label{sec:ingress-rules}
+
+Ingress rules allow traffic in on a particular port (e.g. TCP 22 for SSH). 
+We often use the IP range 0.0.0.0/0 as the source, meaning from anywhere on the internet.
+We can lock this down to specific IP addresses or IP ranges (e.g.~your ISP). 
+
+\subsection{Egress rules}\label{sec:egress-rules}
+
+By default, security groups allow egress of all traffic from instances, so this doesn't need to be set up.
+
+\section{Virtual private clouds}
+\label{sec:virtual-private-clouds}
+
+IaaS components (like EC2) are launched in Virtual Private Clouds (VPCs).
+
+\subsection{Virtual Private Cloud (VPC)}
+
+A VPC (Virtual Private Cloud)  is a virtual software-defined network to which your compute instances connect.
+Essentially it's a software-defined multi-site data entre environment.
+Each VPC \ldots{}
+
+\begin{itemize}
+\item
+  \ldots{} is associated with a single specific region.
+\item
+  \ldots{} is owned by a single AWS account.
+\item
+  \ldots{} has a CIDR block of addresses, such as 10.0.0.0/16.
+\end{itemize}
+
+\subsubsection{IP addresses}
+
+Classless Inter Domain Routing is a way to specify a range of IP addresses in a standard format.
+An IPv4 address is a 32-bit identifier conventionally considered as 4 blocks of 8-bits, \autoref{fig:ipv4-address}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\linewidth]{ipv4_address}
+  \caption{IPv4 address}
+  \label{fig:ipv4-address}
+\end{figure}
+
+\subsubsection{CIDR blocks}
+
+Common CIDR ranges are shown \autoref{fig:ip-address-classes}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1.0\linewidth]{ip_address_classes}
+  \caption{Common CIDR ranges}
+  \label{fig:ip-address-classes}
+\end{figure}
+
+\subsection{Subnets}
+
+A VPC will normally contain one or more subnets. 
+Each subnet:
+
+\begin{itemize}
+\item
+  is associated with a single specific Availability Zone.
+\item
+  has a single CIDR-block of addresses, such as 10.0.1.0/24.
+\item
+  may contain one or more EC2 instances.
+  Each EC2 instance therefore belongs to a particular VPC.
+\end{itemize}
+
+\subsection{Internet Gateway}
+
+When a VPC (and its subnets) are created, it's actually isolated from the internet.
+An Internet Gateway connects a VPC to the public internet.
+
+There are some circumstances we'll see later on where we actually don't want a VPC to connect to the internet, but generally we do.
+Therefore, except in some unusual configurations, every VPC will have an internet gateway attached to it.
+
+\subsection{Route table(s)}
+
+Route tables control how traffic is directed among the different subnets and into/out of the VPC.
+They're not difficult to understand, but a misconfigured route table will generally cause problems.
+Every VPC has a default route table that normally specifies that:
+\begin{itemize}
+\item Traffic for IP ranges within the VPC is local.
+\item Traffic for IP ranges anywhere (0.0.0.0/0) must go through the internet gateway.
+\end{itemize}
+
+
+\section{Names and IDs}\label{names-and-ids}
+
+Names are important to identify components.
+We already know that AWS use text code names for the different regions and AZs.
+As we create and use resources it's important to note the distinction between names we assign and Ids that are assigned by AWS:
+
+\begin{description}
+\item[Names]
+  are assigned by you when creating components like VPCs, subnets, internet gateways, ec2 instances.
+\item[Ids]
+  are assigned by AWS when you create the same resources.
+\end{description}
+
+You can name things any way you like, but I tend to suggest you follow a pattern and avoid spaces!
+\autoref{tab:iaas-naming} shows suggested suffix patterns I use (with the corresponding AWS prefixes for the ids)
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{l l l}
+    \toprule
+    \textbf{Component type} & \textbf{Suggested name suffix} & \textbf{AWS name prefix}\\
+    \midrule
+    VPC & \texttt{\_VPC} & \texttt{vpc-}\\
+    Subnet & \texttt{\_SN} & \texttt{sn-}\\
+    Internet gateway & \texttt{\_IGW} & \texttt{igw-}\\
+    Route table & \texttt{\_RTB} & \texttt{rtb-}\\
+    \bottomrule
+  \end{tabular}
+  \caption{Naming suggestions and AWS Id prefixes}
+  \label{tab:iaas-naming}
+\end{table}
+

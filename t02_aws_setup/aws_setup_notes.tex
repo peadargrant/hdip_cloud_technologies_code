@@ -1,0 +1,115 @@
+\chapter{AWS setup}
+\label{ch:aws-setup}
+
+The labs in this course will use Amazon Web Services, or AWS.
+To do the labs in this course, you will need your own AWS account.
+
+Note that this is not a philosophical endorsement of Amazon!
+There are other cloud providers too - IBM, Google, Microsoft Azure, others.
+Most of the concepts encountered in AWS translate to the others.
+
+\section{Charges}
+\label{sec:charges}
+
+Almost all AWS services are chargeable.
+Many services have a time-limited free tier.
+We will stay almost entirely within the free tier. 
+
+You will need a credit / debit card to sign up for AWS.
+If you don't have one you should be able to use a prepaid card or use an online card like Revolut.
+\textit{I have not tested this option.}
+
+\section{Sign up for an AWS account}
+\label{sec:signup}
+
+If you already have an AWS account you should skip this section.
+
+Sign up for an AWS account by visiting the link:\\
+\url{https://portal.aws.amazon.com/billing/signup}
+
+There is a 5-step process to signing up.
+
+For the account type you should choose Personal.
+
+\section{Log in to the console}
+
+Make sure that you can login to the AWS console using the credentials from the \autoref{sec:signup}.
+The AWS console can be accessed at:\\
+\url{https://aws.amazon.com/console/}
+
+Bookmark the AWS console link in your Browser. You will need it often.
+
+
+\subsection{Region setup}
+\label{sec:region-setup}
+
+AWS is divided into a number of regions (next class!).
+
+On the top right of the AWS Console, it will probably say \textit{N Virginia}.
+Click this and change it to Ireland (eu-west-1).
+The college firewall only allows some connections we need for our work in this module to AWS resources in the eu-west-1 region.
+
+We will look at regions again as part of our study of Global Infrastructure.
+
+\section{Billing alarm}
+
+As stated in \autoref{sec:charges} we will aim to stay within the free tier where possible.
+To avoid any unexpected charges, you will set up a Billing alarm on your account.
+This uses a service named CloudWatch.
+You will also familiarise yourself with using AWS documentation to help you work with AWS.
+The lab instructions \textit{will NOT} provide step-by-step guides!
+
+Visit the \href{https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html}{documentation for CloudWatch Billing alarms}.
+
+\subsection{Enabling billing alerts}
+
+Follow the 4 steps under ``To enable the monitoring of estimated charges''.
+
+You should also turn on the ``Receive Free Tier Usage Alerts'' tickbox.
+
+\subsection{Creating a billing alarm}
+
+Follow instructions 1 to 10 (of the 13) under ``To create a billing alarm using the CloudWatch console''.
+Recommended alarm level is 10 US dollars.
+
+When you have done the 10 steps, click ``Create New Topic''.
+A default Topic name will be created.
+Press Create Topic.
+
+Fill in your e-mail address in the box.
+Then press Next to go on to the next screen.
+
+Set the name to \texttt{BILLING\_ALARM} and continue to the next step. 
+
+Then press Create Alarm.
+You should see a green bar with a message like \texttt{Successfully created alarm BILLING\_ALARM}.
+
+Check your e-mail and confirm the subscription.
+
+\subsection{Checking your billing alarm}
+
+To confirm that your billing alarm has been set up, you will run a provided script.
+\begin{enumerate}
+\item Click the CloudShell icon \texttt{(\textrangle\_)}.
+  This will open a command shell, which will take some time to initialise.
+
+\item Wait until you see something like:
+\begin{verbatim}
+[cloudshell-user@ip-10-0-187-141 ~]$ 
+\end{verbatim}
+
+\item Click the Actions button and then Upload File.
+
+\item Select the file \texttt{check\_billing\_alarm.py} and hit Upload.
+  Wait for the upload to complete.
+
+\item Then type:
+\begin{verbatim}
+python3 ./check_billing_alarm.py
+\end{verbatim}
+
+\item Confirm that your billing alarm has been set up from the script.
+  If not, fix it and re-run the script to confirm. 
+
+\end{enumerate}
+
