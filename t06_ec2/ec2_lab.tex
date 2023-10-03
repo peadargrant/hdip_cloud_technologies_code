@@ -1,0 +1,120 @@
+\chapter{EC2 lab}
+
+\section{VPC creation}
+
+\begin{enumerate}
+
+\item 
+  Create the VPC named \texttt{LAB\_VPC} with IP range 10.0.0.0/16.
+
+\item
+  Create the Subnet named \texttt{LAB\_SUBNET\_1} with:
+[6~  \begin{description}
+  \item[IP range] 10.0.1.0/24
+  \item[automatic public IP assignment] turned on
+  \end{description}
+  
+\item
+  Create the Internet Gateway named \texttt{LAB\_GATEWAY}.
+
+\item
+  Attach the Internet Gateway to the VPC.
+
+\item
+  Find the route table for the VPC.
+  Add a route to send traffic for anywhere (0.0.0.0/0) to your internet gateway.
+
+\item
+  Create the Security Group named \texttt{LAB\_SG} with description \texttt{LAB\_SG}.
+
+\item 
+  Add a rule to your security group permit SSH traffic (TCP port 22) inbound from anywhere on the internet (0.0.0.0/0).
+  
+\end{enumerate}
+
+\section{SSH key setup}
+
+\begin{enumerate}
+\item Open your public key using PuttyGen.
+\item Copy the public key (for pasting into OpenSSH authorized keys)
+\item Go to EC2 and then Key Pairs in the AWS Console.
+\item Choose Import Key
+\item Name the key pair MAIN\_KEY. 
+\item Paste the key you copied into the box.
+\end{enumerate}
+
+\section{EC2 instance}
+
+Create EC2 instance as follows:
+\begin{enumerate}
+\item Open the instances page by browsing to Services, EC2, instances.
+
+\item Hit Launch Instances.
+
+\item Name the instance \texttt{LAB\_INSTANCE}.
+
+\item Pick Amazon Linux from the AMI list.
+
+\item Check that instance type is \texttt{t2.micro} (should be default)
+
+\item Under Key Pair drop down to \texttt{MAIN\_KEY}.
+
+\item On Network Settings hit Edit. Choose your \texttt{LAB\_VPC} from the list.
+
+\item Ensure that your \texttt{LAB\_SUBNET\_1} is selected.
+
+\item Ensure that Auto-assign public IP is set to Enable.
+  
+\item Choose Select existing security group.
+
+\item From the list pick \texttt{LAB\_SG}.
+
+\item Hit Launch Instance in the bottom right.
+
+\item Click the Instances link and notice that your instance will be Pending before changing to Running.
+  
+\end{enumerate}
+
+\section{SSH to your instance}
+
+\begin{enumerate}
+\item Click into your instance in the list.
+
+\item Click the copy button beside Public IPv4 address.
+
+\item Open PuTTY, type the EC2 IP address into the box.
+
+\item Go to connection, data and put \texttt{ec2-user} under the auto login username.
+
+\item Go to connection, SSH, Auth and choose the private key file in the private key file for authentication box. 
+
+\item
+The first time you connect to a host you'll get a warning:
+
+\begin{verbatim}
+The authenticity of host '54.78.220.233 (54.78.220.233)' can't be established.
+ECDSA key fingerprint is SHA256:8omkD5RLibZNgJJ/B7MAnL7IbEcrmCmIWFdQXbjJf60.
+Are you sure you want to continue connecting (yes/no)?
+\end{verbatim}
+
+This is OK!
+
+\item 
+If you see something like the following then you're connected:
+
+\begin{verbatim}
+       __|  __|_  )
+       _|  (     /   Amazon Linux 2 AMI
+      ___|\___|___|
+\end{verbatim}
+
+\end{enumerate}
+
+\section{Cleanup}
+
+Delete all resources you made in this lab:
+\begin{enumerate}
+\item Terminate the instance.
+\item Delete the VPC.
+\end{enumerate}
+
