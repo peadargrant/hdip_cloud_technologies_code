@@ -1,0 +1,234 @@
+\chapter{Secure SHell (SSH)}
+\label{ch:ssh}
+
+\section{Shell}
+
+The shell is the program we normally interact with in a command-line interface.
+Examples: PowerShell, Bash, Korn Shell, C Shell.
+We will return to more details of shell interfaces later on. 
+
+\subsection{Key concepts}
+
+\begin{description}
+\item[Prompt] shows when shell is waiting for input.
+\item[Current working directory] where commands will read and write files relative to.
+\item[Path:] list of folders searched for matching command name
+\end{description}
+
+\subsection{Navigation}
+
+In the command-line environment we navigate the exact same set of folders as we see in the File Explorer / Finder.
+Some hints on navigation (applies to PowerShell and Bash):
+
+\begin{verbatim}
+# print out the folder you're in (i.e. the working directory)
+pwd
+
+# list out the contents of the folder you're in
+ls
+dir   # on windows
+ls -l # detail, linux/mac only
+
+# change to a sub-directory of where you are now
+cd movies
+
+# directly change to a sub-sub-directory
+cd movies/horror
+
+# change to the parent directory
+cd ..
+
+# change to your home directory
+cd ~
+
+# change to a known sub-dir of your home directory
+cd ~/Desktop
+
+# change to a sub-dir of the parent dir
+cd ../music
+\end{verbatim}
+
+It is essential in command-line environments that you are comfortable navigating around the filesystem.
+
+\subsection{Features}
+
+Shells normally provide:
+
+\begin{description}
+\item[History:] list of previous commands recalled (usually the up arrow key).
+\item[Redirection] using \textit{operators}
+  \begin{enumerate}
+  \item Standard input to a file.  
+  \item Standard input from a file.
+  \item Piping the standard output of one command to the standard input of another.
+  \end{enumerate}
+\item[Scripting] a sequence of commands to be performed.
+\item[Variables] to capture and recall information.
+\item[Control constructs] including conditionals, loops, possibly exceptions.
+\end{description}
+
+Different shells vary as to what extent they implement these features.
+We will focus here only on PowerShell in Windows and Bash in Linux. 
+
+\section{Terminal}
+
+The shell itself is normally accessed by means of a terminal.
+This is the program we visually see like the PowerShell Application or XTerm in Linux that encapsulates the terminal program with the GUI environment.
+Examples of terminals:
+
+\begin{description}
+\item[GUI terminals ] like Windows Terminal, XTerm, Terminal.app
+\item[Framebuffer console] on Windows when the GUI is not running.
+\item[Serial console] over a serial port (often seen on embedded devices).
+\item[Remote network terminals] using telnet or more usually SSH.
+\end{description}
+
+\section{Secure Shell}
+
+SSH is a way to for one computer to connect to another's command-line
+interface in a secure fashion. It is widely used both in cloud-based and
+non-cloud environments for remote access.
+
+SSH clients are included in most common operating systems. You can also
+get SSH client apps for iOS and Android.
+
+An SSH client connects to an SSH server.
+The SSH server normally makes the command-line interface of the OS available (e.g.~bash, powershell):
+\begin{itemize}
+\item All modern UNIX/Linux operating systems come with SSH servers as standard.
+\item Windows 10 onwards and Windows Server now have SSH servers included but need some configuration to get working.
+\end{itemize}
+  
+SSH is relatively easy to get started with --- the complexity often comes
+later when features like key-based authentication, multi-factor
+authentication, port forwarding and other extras are employed.
+
+\subsection{SSH client}
+\label{ssh-client}
+
+Most operating systems use the OpenSSH client, named \texttt{ssh}, that is available on the command-line.
+To connect to a remote machine, we simply supply its name or IP and the username to connect as:
+
+\begin{verbatim}
+# connect via IP
+ssh peadar@192.168.0.1
+
+# connect via name
+ssh peadar@compute-server.dkit.ie
+
+# connect using same username as on client
+ssh 192.168.0.1
+ssh compute-server.dkit.ie}
+\end{verbatim}
+
+\section{Key-based authentication}
+\label{key-based-authentication}
+
+SSH key pairs are an alternative to a username/password. They consist
+of:
+
+\begin{description}
+\item[Private key]
+kept on the client and securely stored.
+\item[Public key]
+on the server(s) you want to log in to. (The public key can be freely
+shared around, even put up in public.)
+\end{description}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1.0\linewidth]{key_pair}
+  \caption{Key-based authentication}
+  \label{fig:ssh-key-authentication}
+\end{figure}
+
+\subsection{Creating key pair (windows using PuTTYGen)}
+\label{sec:creating-key-pair-windows}
+
+PuTTYgen is a key generator tool for Windows.
+It's bundled with PuTTY.
+Start PuTTYgen.
+Chose Ed25519 as the key type and hit Generate.
+Move the mouse over the blank area to create some randomness.
+Then save the Private Key file to a known location on your computer.
+
+
+\subsection{Creating key pair (mac, linux)}
+\label{sec:creating-key-pair-unix}
+
+Key pairs are normally and ideally created on your own local client computer.
+Key pairs only need to be generated once.
+(If you already have a key pair created, you can skip on ahead...)
+
+To create an ED25519 key pair, in Powershell/Bash type:
+
+\begin{verbatim}
+ssh-keygen -t ed25519
+\end{verbatim}
+
+You can optionally use a passphrase to encrypt the key pair or leave it blank for easier usage.
+The key pair is then stored in two files in your home directory (same for Mac, Linux, Windows).
+You can find them by changing into the \texttt{.ssh} directory and listing the contents of it:
+
+\begin{verbatim}
+cd .ssh
+dir
+\end{verbatim}
+
+From the directory listing:
+
+\begin{verbatim}
+    Directory: C:\Users\peadar\.ssh
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----       16/10/2020     15:19           3243 id_ed25519
+-a----       16/10/2020     15:19            749 id_ed25519.pub
+-a----       16/10/2020     15:32            176 known_hosts
+\end{verbatim}
+
+The public key is stored in \texttt{id\_rsa.pub}.
+The private key is stored in \texttt{id\_rsa}.
+
+You can of course copy these files to/from a memory stick or online storage.
+Remember though that if your private key is compromised, anybody can use it.
+Best to protect it with a passphrase!
+
+\subsection{Connecting over SSH}
+\label{connecting-over-ssh}
+
+In PowerShell/Bash we can use the SSH command to connect to the SSH server on a remote host.
+This will then present us with a new shell on the remote computer (Bash for Linux/UNIX, PowerShell for Windows).
+By default, SSH will try all private keys in \texttt{.ssh} so we don't need to specify which.
+
+\begin{verbatim}
+ssh student@$publicIp 
+\end{verbatim}
+
+The IP addresses of the servers will be given during the lab.
+The first time you connect to a host you'll get a warning:
+
+\begin{verbatim}
+The authenticity of host '54.78.220.233 (54.78.220.233)' can't be established.
+ECDSA key fingerprint is SHA256:8omkD5RLibZNgJJ/B7MAnL7IbEcrmCmIWFdQXbjJf60.
+Are you sure you want to continue connecting (yes/no)?
+\end{verbatim}
+
+Just type \texttt{yes} here.
+Your local SSH client is just confirming it hasn't seen this machine before.
+If a different key fingerprint shows for the same IP you'll get a warning, which means a host has been changed for another.
+If you see something like the following (on Linux) then you're connected:
+
+\begin{verbatim}
+       __|  __|_  )
+       _|  (     /   Amazon Linux 2 AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-2/
+2 package(s) needed for security, out of 13 available
+Run "sudo yum update" to apply all updates.
+[student@ip-10-0-1-80 ~]$
+\end{verbatim}
+
+
