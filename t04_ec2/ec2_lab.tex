@@ -1,4 +1,5 @@
-\chapter{EC2 lab}
+\chapter{EC2 lab [Async]}
+\label{ch:ec2-lab-async}
 
 \section{VPC creation}
 
@@ -32,16 +33,6 @@
   
 \end{enumerate}
 
-\section{SSH key setup}
-
-\begin{enumerate}
-\item Open your public key using PuttyGen.
-\item Copy the public key (for pasting into OpenSSH authorized keys)
-\item Go to EC2 and then Key Pairs in the AWS Console.
-\item Choose Import Key
-\item Name the key pair MAIN\_KEY. 
-\item Paste the key you copied into the box.
-\end{enumerate}
 
 \section{EC2 instance}
 
@@ -72,43 +63,11 @@ Create EC2 instance as follows:
 \item Hit Launch Instance in the bottom right.
 
 \item Click the Instances link and notice that your instance will be Pending before changing to Running.
+
+\item Right click the instance and choose connect.
   
 \end{enumerate}
 
-\section{SSH to your instance}
-
-\begin{enumerate}
-\item Click into your instance in the list.
-
-\item Click the copy button beside Public IPv4 address.
-
-\item Open PuTTY, type the EC2 IP address into the box.
-
-\item Go to connection, data and put \texttt{ec2-user} under the auto login username.
-
-\item Go to connection, SSH, Auth and choose the private key file in the private key file for authentication box. 
-
-\item
-The first time you connect to a host you'll get a warning:
-
-\begin{verbatim}
-The authenticity of host '54.78.220.233 (54.78.220.233)' can't be established.
-ECDSA key fingerprint is SHA256:8omkD5RLibZNgJJ/B7MAnL7IbEcrmCmIWFdQXbjJf60.
-Are you sure you want to continue connecting (yes/no)?
-\end{verbatim}
-
-This is OK!
-
-\item 
-If you see something like the following then you're connected:
-
-\begin{verbatim}
-       __|  __|_  )
-       _|  (     /   Amazon Linux 2 AMI
-      ___|\___|___|
-\end{verbatim}
-
-\end{enumerate}
 
 \section{Cleanup}
 
