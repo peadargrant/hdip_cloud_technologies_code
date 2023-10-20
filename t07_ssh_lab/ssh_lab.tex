@@ -1,0 +1,46 @@
+\chapter{SSH lab [Async]}
+\label{ch:ssh-lab-async}
+
+\section{Video tutorial}
+
+\url{https://media.heanet.ie/page/9132bc09bc8f4195b44f602e914bb1c0}
+
+\section{Exercise}
+
+\begin{enumerate}
+
+\item
+  Use PuTTYGen to create an ED25519 SSH key.
+
+\item
+  Save the private key in ppk format.
+
+\item
+  Import the key to your AWS account (copying the Public Key for Pasting into authorized_keys).
+
+\item
+  Construct the same setup as in \autoref{ch:ec2-lab-async} except that you should choose the Key in the dropdown when creating the EC2 instance.
+
+\item
+  Use PuTTY to connect to your instance:
+  \begin{enumerate}
+  \item Public IPv4 address goes into the hostname / IP address box.
+  \item Connection / Data / Auto-Login username should be \texttt{ec2-user}.
+  \item Connection / SSH / Auth Private Key should be your private key file.
+  \item Consider saving your connection data to avoid having to re-do it.
+  \end{enumerate}
+
+\item
+  Hit Connect.
+  First time you connect to any machine it'll give a warning message.
+  You can just hit continue / accept.
+
+\item 
+  You'll be then asked your Key Passphrase.
+  If this succeeds you'll see the Bash prompt.
+
+\end{enumerate}
+
+In later labs we'll do more work at the bash prompt.
+For now, you've set up your first linux instance with SSH access.
+
