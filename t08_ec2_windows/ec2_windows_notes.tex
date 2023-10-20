@@ -1,0 +1,352 @@
+\chapter{EC2 Windows}
+\label{ch:ec2-windows}
+
+\section{Remote access}
+
+Windows Server is traditionally managed using its GUI, although remote
+PowerShell use through various means is becoming more popular.
+
+GUI management can be done via a directly or KVM-connected video
+display, mouse and keyboard. As with linux instances, AWS doesn't
+provide emulated KVM access. Only a screenshot picture of the instance
+can be taken.
+
+\subsection{Remote desktop protocol}\label{remote-desktop-protocol}
+
+Remote Desktop Protocol
+(RDP) is the standard way to manage remote windows servers (and clients)
+and is built into Microsoft Windows. Key things to note:
+
+\begin{itemize}
+\item
+  RDP runs over TCP on port 3389.
+\item
+  RDP must be enabled on the Windows control panel of the server for it
+  to work. AMIs for Windows on AWS have RDP enabled already.
+\item
+  RDP sessions are not as ``independent'' of each other as SSH sessions
+  are:
+
+  \begin{itemize}
+  \item
+    Generally Windows Server supports a maximum of two concurrent
+    separate user logins over a combination of RDP (and the local
+    console, which isn't present on AWS).
+  \item
+    Windows Clients (e.g.~XP, 7, 8, 10) normally support only one login
+    at a time (over all methods). If the same user logs in, the existing
+    session should be picked-up/transferred.
+  \end{itemize}
+\item
+  RDP allows a number of different enhancements to be selected when
+  connecting:
+
+  \begin{itemize}
+  \item
+    The resolution of the remote session can be set when connecting.
+  \item
+    Current RDP versions allow multi-monitor support.
+  \item
+    File sharing can be enabled for the session so that necessary files
+    can be easily transferred between the client and RDP server.
+  \item
+    Ports can also be attached.
+  \item
+    Audio and printer output can be redirected back to the client.
+  \end{itemize}
+\item
+  RDP does not support user managed keys like SSH, but can support
+  single sign-on through Active Directory if both the client and server
+  share the same domain.
+\end{itemize}
+
+\subsection{Terminal Services}\label{terminal-services}
+
+Terminal Services is a licensing extension to remote desktop to enable a
+number of different concurrent remote sessions to be open. It is
+sometimes used to allow users to ``pick up'' their desktop at different
+computers, often thin clients.
+
+\subsection{Alternatives}\label{alternatives}
+
+\begin{description}
+\item[VNC]
+is often used in Windows to present the console remotely, in either
+view-only or view \& control mode. VNC is cross platform and has clients
+for almost every operating system, but is limited somewhat by its weak
+authentication.
+\item[Proprietary solutions]
+like TeamViewer and GoToMyPC require additional client software, can be
+easier to setup for non-technical users and often can traverse NAT
+routers automatically.
+\end{description}
+
+\subsection{Command-line access}\label{command-line-access}
+
+\begin{itemize}
+\item
+  \textbf{PowerShell remoting} gives access to the PowerShell interface
+  of a remote Windows computer. It can be used on a basic level like
+  SSH, but underneath is quite different, with different strengths and
+  weaknesses.
+\item
+  \textbf{SSH} access to Windows is possible using OpenSSH, offering
+  access to \texttt{cmd.exe} or \texttt{PowerShell} from remote
+  computers.
+\end{itemize}
+
+% \section{VPC setup}\label{vpc-setup}
+
+% VPC for this week in the file \texttt{ec2\_windows\_vpc\_setup.ps1}
+
+% This is largely the same as the linux Lab except that:
+
+% \begin{itemize}
+% \item
+%   Checks for the existence of your \texttt{LAB\_KEY} before continuing.
+% \item
+%   Creates the security group \texttt{LAB\_SG}
+% \item
+%   Adds a rule to \texttt{LAB\_SG} to permit RDP (Port 3389) access.
+% \end{itemize}
+
+% Output should be similar to:
+
+% \begin{verbatim}
+% KeyPair: key-09a3afe83db8e8381
+% VPC: vpc-0209bd43322117a41
+% Subnet: subnet-05fa961d022b72730
+% IGW: igw-0d070969dfd43c2cf
+% Route Table: rtb-0b56038dfec860e3d
+% {
+%     "Return": true
+% }
+% Security Group: sg-0326166674b0b68f0
+% Modified security group to permit RDP access
+% \end{verbatim}
+
+% \section{Lookup Image Ids automatically (move for
+% 2021)}\label{lookup-image-ids-automatically-move-for-2021}
+
+% Image IDs are region and account-dependent. They also get updated as
+% Amazon update the images.
+
+% \begin{verbatim}
+% # print out list of Windows AMIs
+% ami ssm get-parameters-by-path -path /aws/service/ami-windows-latest --query "Parameters[].Name" 
+% \end{verbatim}
+
+% The ``standard'' windows image we will use is
+% \texttt{Windows\_Server-2019-English-Full-Base}.
+
+\section{Provisioning a Windows Instance}
+\label{sec:provisioning-a-windows-instance}
+
+These steps assume you are familiar with provisioning a linux instance
+from the previous week's lab.
+
+\subsection{Launching the instance}
+\label{sec:launching-the-instance}
+
+To start a Windows instances, we mainly need the same set of
+information:
+
+\begin{itemize}
+\item
+  The AMI of the Windows image. We will use \emph{Microsoft Windows
+  Server 2022 Base}. Check the AMI as it appears on your own account.
+\item
+  The Subnet ID to launch the instance into. (Which links us to a specific VPC)
+\item
+  The instance type 
+\item
+  Security Group
+\item
+  The \textbf{SSH key pair}:
+\end{itemize}
+
+The Key Pair is still needed, but it serves a different function in
+Windows instances compared to Linux instances.
+
+
+\section{Connecting over RDP}\label{connecting-over-rdp}
+
+To connect to our Windows instance over RDP we need to know the Public
+IP and the password for the administrator account.
+
+\subsection{Getting password data}\label{getting-password-data}
+
+To get the password data for a given instance ID in the AWS Console, select the Instances.
+Under Actions / Security select Get Windows Password.
+Browse for your Private Key file.
+
+If the password is blank, it means that the post-launch setup hasn't yet
+completed. Just pause here and try it again in a couple of minutes.
+
+The decrypted password shown matches the Windows local Administrator
+account.
+
+\subsection{Connecting with the graphical client}
+\label{sec:connecting-with-the-graphical-client}
+
+Look for Remote Desktop Connnection in the start menu. Use the IP
+address, username Administrator, and the password and hit Connect.
+
+You should be at a standard Windows desktop running on the remote
+machine. At this point you can administer the machine any way you want,
+including setting up a new admin user account and/or changing the
+password.
+
+\section{SSH server on Windows}
+\label{sec:ssh-server-on-windows}
+
+Remote Desktop is just one way to access a Windows server for management.
+Windows now supports SSH access to the command-prompt (and to PowerShell).
+
+\subsection{Checking if OpenSSH is installed}
+\label{checking-if-openssh-is-installed}
+
+On your AWS Windows Server open PowerShell and type
+
+\begin{verbatim}
+Get-WindowsCapability -Online -Name Open*
+\end{verbatim}
+
+You will see something like:
+
+\begin{verbatim}
+Name         : OpenSSH.Client~~~~0.0.1.0
+State        : Installed
+DisplayName  : OpenSSH Client
+Description  : OpenSSH-based secure shell (SSH) client, for secure key management and access to remote machines.
+DownloadSize : 1323493
+InstallSize  : 5301402
+
+Name         : OpenSSH.Server~~~~0.0.1.0
+State        : NotPresent
+DisplayName  : OpenSSH Server
+Description  : OpenSSH-based secure shell (SSH) server, for secure key management and access from remote machines.
+DownloadSize : 1297677
+InstallSize  : 4946932
+\end{verbatim}
+
+To install the OpenSSH server we type
+
+\begin{verbatim}
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+\end{verbatim}
+
+If it succeeded you'll see
+
+\begin{verbatim}
+Path          :
+Online        : True
+RestartNeeded : False
+\end{verbatim}
+
+Re-run the \texttt{Get-WindowsCapability} command to confirm it's now
+installed.
+
+\subsection{Server startup}\label{server-startup}
+
+SSH is provided by a server process called \texttt{sshd}.
+
+First we confirm the service exists:
+
+\begin{verbatim}
+Get-Service sshd
+\end{verbatim}
+
+From the output we note that it is installed but isn't currently
+running:
+
+\begin{verbatim}
+Status   Name               DisplayName
+------   ----               -----------
+Running  sshd               OpenSSH SSH Server
+\end{verbatim}
+
+This server needs to be started and to be configured to start
+automatically on reboot:
+
+\begin{verbatim}
+# start immediately
+Start-Service sshd
+
+# Set to start automatically on boot
+Set-Service -Name sshd -StartupType automatic
+\end{verbatim}
+
+\subsection{Testing SSH server from same EC2
+instance}\label{testing-ssh-server-from-same-ec2-instance}
+
+Now we can test it by connecting from the EC2 instance itself.
+
+\begin{verbatim}
+ssh Administrator@localhost
+\end{verbatim}
+
+and entering the admin password. We're actually at the older command.com
+prompt, but this can be changed to Powershell using system
+configuration.
+
+\subsection{Connecting from our computer to EC2 SSH
+server}\label{connecting-from-our-computer-to-ec2-ssh-server}
+
+The main reason to use SSH would be to connect from our own local
+computer to the EC2 instance. SSH uses TCP port 22, which isn't
+currently permitted by the security group. There are two possibilities:
+create a second security group and assign it to the machine, or modify
+the existing group.
+
+
+Then on our local computer we type:
+
+\begin{verbatim}
+ssh Administrator@$PublicIp
+\end{verbatim}
+
+and put in the machine's password. (Notice here that although AWS did
+setup the private keys for us, that it doesn't inject the private key
+into the EC2 instance for us as with Linux.)
+
+You have successfully connected over SSH if you see output similar to
+the following:
+
+\begin{verbatim}
+Microsoft Windows [Version 10.0.17763.1518]
+(c) 2018 Microsoft Corporation. All rights reserved.
+
+administrator@EC2AMAZ-3DE14BE C:\Users\Administrator>
+\end{verbatim}
+
+This is actually the older command.com shell, rather than PowerShell. We
+can run powershell from here by just typing:
+
+\begin{verbatim}
+powershell
+\end{verbatim}
+
+Typing \texttt{exit} will get us back out of Powershell, and
+\texttt{exit} again will close the SSH session.
+
+\subsection{Configuring SSH}\label{configuring-ssh}
+
+If you intend to use SSH to work with Windows regularly you should take
+the time to configure it properly. Here are a few tips:
+
+\begin{itemize}
+\item
+  There are a number of ways to reconfigure SSHd to launch PowerShell
+  instead, with various drawbacks.
+\item
+  Use the local user/group management to limit who is allowed to login
+  over SSH.
+\item
+  Use public/private keys and disable password authentication. You will
+  have to consult the OpenSSH docs for Windows as the configuration is
+  slightly different to Linux.
+\item
+  If using SSH keys, learn about agent forwarding.
+\end{itemize}
+

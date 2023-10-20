@@ -1,0 +1,36 @@
+\chapter{EC2 Windows Lab [ASYNC]}
+\label{ch:ec2-windows-lab-async}
+
+\section{Video tutorials}
+
+\subsection{Demonstration}
+\url{https://media.heanet.ie/page/76cad179a16a4a0d9f4004d619d1eb85}
+
+\subsection{Lab walk-through}
+\url{https://media.heanet.ie/page/f56227a4bf8e485388247272efc630f7}
+
+\section{Independent work}
+
+For this week's independent work exercise please work through the creation of an EC2 Windows machine from scratch.
+This is as much to build familiarity with the VPC ecosystem as with EC2 or Windows Server itself.
+
+\subsection{Optional: SSH on Windows}
+
+Windows Server can easily provide SSH capability to its Command-Line Interface.
+\begin{enumerate}
+\item Work through the instructions from \autoref{sec:ssh-server-on-windows} onwards to enable it.
+\item You will need to add SSH (TCP Port 22) to the security group.
+\item Just put the public IP into PuTTY. Username is Administrator and password is the windows password.
+\end{enumerate}
+You'll end up at the older \texttt{cmd.exe} prompt.
+Just type \texttt{powershell} and press enter to get PowerShell instead.
+
+\subsection{Optional: 2 instances in a subnet}
+
+You could try to add a second EC2 instance to your VPC \& subnet that runs linux.
+You will need:
+\begin{enumerate}
+\item An ED25519 key pair
+\item To add SSH (TCP Port 22) to your Inbound rules of your security group. 
+\end{enumerate}
+

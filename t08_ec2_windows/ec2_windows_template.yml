@@ -1,0 +1,59 @@
+Resources:
+  LABVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: LAB_VPC
+  LABIGW:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: LAB_GATEWAY
+  LABIGWAttach:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref LABIGW
+      VpcId: !Ref LABVPC
+  LABROUTETABLE:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref LABVPC
+      Tags:
+        - Key: Name
+          Value: public_routes
+  LABROUTE:
+    Type: 'AWS::EC2::Route'
+    DependsOn: LABIGW
+    Properties:
+      RouteTableId: !Ref LABROUTETABLE
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref LABIGW
+  LABSN:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref LABVPC
+      Tags:
+        - Key: Name
+          Value: LAB_SUBNET_1
+  LABSNRTA:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref LABROUTETABLE
+      SubnetId: !Ref LABSN
+Outputs:
+  VpcId:
+    Value: !Ref LABVPC
+    Description: VPC ID
+  AZ:
+    Value: !GetAtt 
+      - LABSN
+      - AvailabilityZone
+    Description: Subnet AZ
+  SubnetId:
+    Value: !Ref LABSN
+    Description: Subnet ID
