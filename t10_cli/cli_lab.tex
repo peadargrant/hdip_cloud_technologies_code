@@ -1,0 +1,96 @@
+\chapter{Command Line Interface Setup}
+\label{ch:cli-setup}
+
+\section{Using your own computer}
+
+If you're on a lab computer then skip ahead to \autoref{sec:powershell-execution-policy}.
+I only support the lab configuration but you are welcome to try out and use your own machine (incl. MacOS, Linux etc) if you can support it yourself.
+All of the software used here is cross-platform.
+
+Mac, Linux, Unix users will have no problems installing the AWS CLI, and the commands work identically to those on Windows.
+
+
+\subsection{Software installation}
+
+Required software:
+\begin{description}
+\item[PowerShell] on non-MS systems\\from \url{https://github.com/PowerShell/PowerShell/releases/tag/v7.2.6}
+\item[Git] from \url{https://git-scm.com/downloads}
+\item[AWS CLI] from \url{https://aws.amazon.com/cli/}
+\end{description}
+
+\subsection{PowerShell usage}
+
+The difference between Mac/Linux and Windows centres on the use of
+Bash/zsh by Mac/Linux/UNIX vs PowerShell on Windows. The AWS CLI is
+perfectly scriptable using Bash, particularly in conjunction with
+\texttt{jq} to parse JSON. However, some of the scripts you will be
+provided with in this module will be PowerShell only due to time
+constraints.
+
+The good news is that PowerShell Core 7 can be installed easily on a Mac
+with no issues. You \emph{do not} need a Windows VM on your Mac to use
+any of the PowerShell or AWS commands in \emph{this} course. Please go
+to the \href{https://github.com/PowerShell/PowerShell}{PowerShell page
+on GitHub} for instructions.
+
+When you have PowerShell installed, open the Terminal app and type
+\texttt{pwsh} and you'll be at a PowerShell prompt.
+
+\section{PowerShell execution policy}
+\label{sec:powershell-execution-policy}
+
+(Not needed on non-Windows systems.)
+We will use a number of PowerShell scripts throughout the module. 
+PowerShell by default will not allow scripts to run that were downloaded from online.
+Run the following command to change this behaviour:
+
+\begin{verbatim}
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+\end{verbatim}
+
+Answer \textit{all} when prompted.
+
+
+\section{Setup AWS command-line interface}
+\label{sec:setup-aws-command-line-interface}
+
+\begin{enumerate}
+\item Log in to the AWS Console.
+\item Search for IAM.
+\item Create a new User Group called 'me' and add permissions AdministratorAccess. 
+\item Create a new IAM User.  Use a simple name like lab or home.
+\item Leave permissions option set to Add User to group and tick the me group.
+\item In the summary page click Create user button at the bottom.
+\item Click into your newly created user in the list and click Security credentials.
+\item Click Create Access Key.
+\item Click Other in the list (last item) and click Next.
+\item Click Create Access Key. LEAVE THIS WINDOW OPEN. 
+\item In PowerShell run:
+\begin{verbatim}
+aws configure
+\end{verbatim}
+It will prompt first for an access key. 
+\item Copy the Access key from your web browser using the copy button to the left. Paste into Powershell (right click pastes). Press enter. You should see a prompt for the secret key.
+\item In your web browser press Show beside Secret access key.
+\item Click the copy button left of the secret access key. Paste into Powershell (right click pastes). Press enter. You should see a prompt for default region name.
+\item Type \texttt{eu-west-1} and press enter.
+\item At the next prompt for output format, just leave it blank and press enter again.
+\item To test if your setup is OK try the command
+\begin{verbatim}
+aws sts get-caller-identity
+\end{verbatim}
+It should show something like
+\begin{verbatim}
+{
+    "UserId": "AZZWSPAIKW5JIDD3K3OYE",
+    "Account": "601113240434",
+    "Arn": "arn:aws:iam::601113240434:user/pgcli"
+}
+\end{verbatim}
+\end{enumerate}
+
+
+
+
+

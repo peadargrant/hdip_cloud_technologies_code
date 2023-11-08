@@ -1,0 +1,596 @@
+\chapter{EC2 CLI}
+
+
+EC2 and all other AWS services can be scripted through the Command-Line Interface.
+Here we will look at the setup of a VPC, Security Group and EC2 instance.
+
+\section{Powershell usage}
+
+\subsection{Working directory}
+
+The working directory (folder) is shown at the PowerShell prompt.
+On Windows, directories exist within drives. 
+
+\subsection{Changing directory}
+
+\begin{minted}{powershell}
+# change into foldername folder
+cd foldername
+
+# go back up to the parent directory
+cd ..
+
+# go back to your home directory (C:\Users\yourname)
+cd ~
+
+# go to a directory relative to your home directory
+# e.g. to go to the Desktop folder
+cd ~/Desktop
+
+# change to a different drive (e.g. O:)
+O: 
+\end{minted}
+
+\subsection{Command history}
+
+You can use the up cursor key to view previously entered commands and re-run them after editing them.
+
+\subsection{AWS CLI}
+
+The AWS CLI consists of the \texttt{aws} command and its subcommands grouped by service. 
+Almost all of the commands we'll use are in the \texttt{aws ec2} category.
+To get help:
+
+\begin{minted}{powershell}
+# help on the AWS command
+aws help
+
+# help on the commands available in ec2 category
+aws ec2 help
+
+# help on an individual command 
+aws ec2 describe-instances help
+\end{minted}
+
+\section{Creating a VPC}\label{creating-a-vpc}
+
+Before creating any resources on AWS, you should draw out your VPC as
+best you can on paper. When creating VPCs and other resources, try to be
+systematic with your naming!
+
+We will work through an example of a VPC (named \texttt{LAB\_VPC}) with
+the CIDR block 10.0.0.0/16 with the 10.0.1.0/24 address range assigned
+to a single subnet \texttt{LAB\_1\_SN}. This VPC will be setup so that
+it connects to the public internet.
+
+\begin{itemize}
+\item
+  VPC 10.0.0.0/16 named \texttt{LAB\_VPC}
+\item
+  Subnet 10.0.1.0/24 \texttt{LAB\_1\_SN}
+
+  \begin{itemize}
+  
+  \item
+    Auto-assign public IP is turned on. This means that EC2 instances
+    launched in this subnet will also receive a public IP that is
+    transparently routed to their private IP by AWS using NAT.
+  \end{itemize}
+\item
+  Internet gateway \texttt{LAB\_GATEWAY} attached to VPC
+\item
+  Route table (named \texttt{LAB\_RT}) with routes for:
+
+  \begin{itemize}
+  \item
+    Local traffic 10.0.0.0/16 sent locally
+  \item
+    All traffic 0.0.0.0/0 routed via \texttt{LAB\_GATEWAY}
+  \end{itemize}
+\end{itemize}
+
+These notes show how to create a VPC using the CLI. The first thing to
+remember is to use the \texttt{help} subcommand of \texttt{aws}
+liberally. Some commands have required arguments (things that must
+specify) and will tell you if you've omitted them. To see what effect
+the commands are having you can follow along at the same time in the
+console and see the effect of your changes.
+
+\subsection{VPC creation}\label{vpc-creation}
+
+To create a VPC using the CIDR block 10.0.0.0/16 we can say:
+
+\begin{verbatim}
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+\end{verbatim}
+
+This will return a JSON-formatted response similar to:
+
+\begin{minted}{json}
+{
+    "Vpc": {
+        "CidrBlock": "10.0.0.0/16",
+        "DhcpOptionsId": "dopt-0e49fce64f2659c15",
+        "State": "pending",
+        "VpcId": "vpc-08ae22f0a2cc414a0",
+        "OwnerId": "593472368051",
+        "InstanceTenancy": "default",
+        "Ipv6CidrBlockAssociationSet": [],
+        "CidrBlockAssociationSet": [
+            {
+                "AssociationId": "vpc-cidr-assoc-058fd321447f841b1",
+                "CidrBlock": "10.0.0.0/16",
+                "CidrBlockState": {
+                    "State": "associated"
+                }
+            }
+        ],
+        "IsDefault": false
+    }
+}
+\end{minted}
+
+A few things to note about the response:
+
+\begin{itemize}
+\item
+  Most AWS commands will return output formatted as JSON.
+\item
+  The VPC ID is assigned by AWS, not us.
+\end{itemize}
+
+If you look at the console following creation of your VPC you'll see it
+listed if you hit refresh.
+
+\subsubsection{Using shell variables}
+
+We are going to need the VPC ID in a few places.
+You should copy and paste it to assign it to a variable.
+Powershell:
+
+\begin{minted}{powershell}
+$VpcId="vpc-08ae22f0a2cc414a0"
+\end{minted}
+
+Bash version:
+\begin{minted}{bash}
+VpcId="vpc-08ae22f0a2cc414a0"
+\end{minted}
+
+\subsubsection{Naming}
+
+To name our VPC as \texttt{LAB\_VPC} we issue the command:
+
+\begin{minted}{powershell}
+aws ec2 create-tags --resources $VpcId --tags Key=Name,Value=LAB_VPC
+\end{minted}
+
+Hitting refresh in the console should show the name now appearing.
+
+\subsection{Subnet creation}\label{subnet-creation}
+
+Creating a subnet requires two pieces of information: the VPC ID and the
+CIDR block (which must be a subset of the VPC CIDR block). For a simple
+VPC with one subnet, the subnet's CIDR block can be the same as the
+VPC's CIDR block. But normally it's good to have it smaller (giving us
+the option later to add another subnet). Here we will create a single
+subnet with the CIDR block 10.0.0.0/24 inside the VPC (CIDR block
+10.0.0.0/16).
+
+\begin{minted}{powershell}
+aws ec2 create-subnet --vpc-id $VpcId --cidr-block 10.0.1.0/24
+\end{minted}
+
+Just like the VPC, the subnet creation will return:
+
+\begin{minted}{json}
+{
+    "Subnet": {
+        "AvailabilityZone": "eu-west-1b",
+        "AvailabilityZoneId": "euw1-az1",
+        "AvailableIpAddressCount": 251,
+        "CidrBlock": "10.0.1.0/24",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-085a8c631d6a9b174",
+        "VpcId": "vpc-08ae22f0a2cc414a0",
+        "OwnerId": "593472368051",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:eu-west-1:593472368051:subnet/subnet-085a8c631d6a9b174"
+    }
+}
+\end{minted}
+
+A few interesting things to note about the response:
+
+\begin{itemize}
+\item
+  AWS has assigned a \texttt{SubnetId} for us.
+\item
+  Each subnet is actually linked to a physical availability zone, here
+  \texttt{eu-west-1b} (within the \texttt{eu-west-1} region).
+\item
+  Note also how \texttt{eu-west-1b} is actually known as
+  \texttt{euw1-az1}. This is because the \texttt{a,\ b,\ c} availability
+  zones are actually rotated between different accounts to balance load.
+  Your \texttt{eu-west-1b} might be another person's
+  \texttt{eu-west-1c}.
+\end{itemize}
+
+\subsubsection{Subnet ID}
+
+\begin{minted}{powershell}
+$SubnetId="subnet-085a8c631d6a9b174"
+\end{minted}
+
+\subsubsection{Naming subnet}
+
+We can name the subnet the same way as the VPC:
+
+\begin{minted}{powershell}
+aws ec2 create-tags --resources $SubnetId --tags Key=Name,Value=LAB_SUBNET_1
+\end{minted}
+
+\subsubsection{Public IP}
+
+\begin{minted}{powershell}
+aws ec2 modify-subnet-attribute `
+--subnet-id $SubnetId `
+--map-public-ip-on-launch
+\end{minted}
+
+\subsection{Internet gateway}\label{internet-gateway}
+
+An internet gateway needs to be created and then attached to the correct
+VPC. To create an internet gateway we type:
+
+\begin{minted}{powershell}
+aws ec2 create-internet-gateway
+\end{minted}
+
+with JSON response like:
+
+\begin{minted}{json}
+{
+    "InternetGateway": {
+        "Attachments": [],
+        "InternetGatewayId": "igw-065bc8d541f711ce1",
+        "OwnerId": "593472368051",
+        "Tags": []
+    }
+}
+\end{minted}
+
+Save the gateway ID
+\begin{minted}{powershell}
+$GatewayId="igw-065bc8d541f711ce1"
+\end{minted}
+
+We can name the internet gateway the same as before:
+
+\begin{minted}{powershell}
+aws ec2 create-tags --resources $GatewayId  --tags Key=Name,Value=LAB_GATEWAY
+\end{minted}
+
+Finally we can attach the internet gateway to a VPC.
+
+\begin{minted}{powershell}
+aws ec2 attach-internet-gateway --internet-gateway-id $GatewayId --vpc-id $VpcId
+\end{minted}
+
+This won't return any output unless there's an error.
+
+\subsection{Route tables}
+\label{route-tables}
+
+In the CLI, we can get a list of all route tables using:
+
+\begin{minted}{powershell}
+aws ec2 describe-route-tables
+\end{minted}
+
+which will show us all the route tables. To ensure we see only the route
+table(s) for our VPC we should add a filter to the command (as described
+in the help):
+
+\begin{minted}{powershell}
+aws ec2 describe-route-tables --filters Name=vpc-id,Values=$VpcId
+\end{minted}
+
+This will give us the route table in JSON:
+
+\begin{minted}{json}
+{
+    "RouteTables": [
+        {
+            "Associations": [
+                {
+                    "Main": true,
+                    "RouteTableAssociationId": "rtbassoc-0eb5e7a4ea9666bd3",
+                    "RouteTableId": "rtb-0b7ce39addb6017be",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-0b7ce39addb6017be",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.0.0.0/16",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                }
+            ],
+            "Tags": [],
+            "VpcId": "vpc-08ae22f0a2cc414a0",
+            "OwnerId": "593472368051"
+        }
+    ]
+}
+\end{minted}
+
+\subsubsection{Route table ID}
+
+We grab the route table ID:
+\begin{minted}{powershell}
+$RouteTableId="rtb-0b7ce39addb6017be"
+\end{minted}
+
+\subsubsection{Naming the route table}
+
+First let's name the main route table:
+
+\begin{verbatim}
+aws ec2 create-tags --resources $RouteTableId --tags Key=Name,Value=LAB_RTB
+\end{verbatim}
+
+\subsubsection{Adding route}
+
+Looking at the JSON output, the Routes list contains one entry. This
+routes all traffic to 10.0.0.0/16 addresses locally. We need to add a
+route for traffic elsewhere (0.0.0.0/0) to go through the internet
+gateway.
+
+\begin{minted}{powershell}
+aws ec2 create-route `
+--route-table-id $RouteTableId `
+--destination-cidr-block 0.0.0.0/0 `
+--gateway-id $GatewayId
+\end{minted}
+
+Re-running the describe route table command should now show two routes.
+
+\section{Security groups}
+\label{security-groups}
+
+Security groups are essentially a firewall controlling what traffic is
+allowed into or out of each instance. For a good description of security
+groups type:
+
+\begin{minted}{powershell}
+aws ec2 create-security-group help
+\end{minted}
+
+Each instance may have one or more security groups attached.
+
+Every instance created can have a default security group attached but
+this leads to a few problems:
+
+\begin{itemize}
+\item
+  Hard to get an overview of allowed/denied traffic to instances
+  (security risk)
+\item
+  Hard to reconfigure allowed/denied traffic to a number of instances
+  (time consuming, nuisance)
+\end{itemize}
+
+Instead we will create a security group and attach it as needed to
+instances in our VPC. We will create a \texttt{LAB\_SG} security group
+to allow in SSH access.
+
+\subsection{Creating security group}\label{sec:creating-security-group}
+
+Security groups are associated with a VPC, so your VPC must be set up
+before creating the security group.
+
+\begin{minted}{powershell}
+aws ec2 create-security-group --group-name 'LAB_SG' --description 'LAB_SG' --vpc-id $VpcId
+\end{minted}
+
+Successful output will look like:
+
+\begin{minted}{json}
+{
+    "GroupId": "sg-0d26fc12d5641121c"
+}
+\end{minted}
+
+\begin{minted}{powershell}
+$GroupId='sg-0d26fc12d5641121c'
+\end{minted}
+
+\subsection{Adding ingress rules}\label{adding-ingress-rules}
+
+We now add an ingress rule to our security group to permit inbound TCP
+traffic on Port 22 (SSH) using the command:
+
+\begin{minted}{powershell}
+aws ec2 authorize-security-group-ingress `
+--group-id $GroupId `
+--protocol tcp `
+--port 22 --cidr 0.0.0.0/0
+\end{minted}
+
+Note we used 0.0.0.0/0 as the source, meaning from anywhere. We can lock
+this down to specific IP addresses or IP ranges (e.g.~your ISP). This is
+an exercise for another time!
+
+\subsection{Egress rules}\label{egress-rules}
+
+By default, security groups allow egress of all traffic from instances,
+so this doesn't need to be set up.
+
+\section{Instance setup}\label{instance-setup}
+
+We will setup an EC2 instance as follows:
+
+\begin{itemize}
+\item
+  AMI: Amazon Linux
+\item
+  Configuration: \texttt{t2.micro}
+\item
+  VPC: \texttt{LAB\_VPC}
+\item
+  Subnet: \texttt{LAB\_1\_SUBNET}
+\item
+  Security group: \texttt{LAB\_SG}
+\item
+  Key: \texttt{MAIN\_KEY}
+\end{itemize}
+
+
+\subsection{Available image names}\label{available-image-names}
+
+Image IDs are region and account-dependent. They also get updated as
+Amazon update the images.
+We can use a tool called Systems Manager to look up available AMIs:
+
+\begin{minted}{powershell}
+# print out list of Linux AMIs
+aws ssm get-parameters-by-path `
+--path /aws/service/ami-amazon-linux-latest `
+--query "Parameters[].Name"
+\end{minted}
+
+The ``standard'' linux image we will use is \texttt{amzn2-ami-hvm-x86\_64-gp2}.
+
+\subsection{Launching by name}\label{launching-by-name}
+
+We can use Systems Manager to launch an instance using the following
+syntax. Instead of giving an AMI directly we use \texttt{resolve:ssm:}
+to tell AWS to look this value up in SSM.
+
+\begin{minted}{powershell}
+aws ec2 run-instances `
+--subnet-id $SubnetId `
+--image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 `
+--instance-type t2.micro `
+--key-name MAIN_KEY `
+--security-group-ids $GroupId
+\end{minted}
+
+\subsection{Instance information}\label{instance-information}
+
+Launching an instance will give a very long JSON in the format:
+
+\begin{minted}{json}
+{
+    "Groups": [],
+    "Instances": [
+        {
+            "AmiLaunchIndex": 0,
+            "ImageId": "ami-0bb3fad3c0286ebd5",
+            "InstanceId": "i-062914b3061527245",
+            "...": "...",
+            "ReservationId": "r-0536a89f39c4c6324"
+}
+\end{minted}
+
+We grab the instance Id:
+\begin{minted}{powershell}
+$InstanceId="i-062914b3061527245"
+\end{minted}
+
+\section{Connecting to instance}\label{sec:connecting-to-instance}
+
+\subsection{Finding instance public
+IP}\label{sec:finding-instance-public-ip}
+
+Once our instance is Running, it will have a public IPv4 that AWS
+transparently routes through to its private IP using NAT.
+
+To find this out we can look it up in the console, or use the following
+commands:
+
+\begin{minted}{powershell}
+aws ec2 describe-instances --instance-id $InstanceId
+\end{minted}
+
+The public IP is listed with the network interface:
+
+\begin{minted}{json}
+{
+    "Reservations": [
+        {
+            "Groups": [],
+            "Instances": [
+                {
+                    "AmiLaunchIndex": 0,
+                    "...": "...",
+                    "PublicIpAddress": "54.170.85.144",
+                    "State": {
+                        "Code": 16,
+                        "Name": "running"
+                    }
+                }
+            ],
+            "OwnerId": "593472368051",
+            "ReservationId": "r-04094affdd1662bba"
+        }
+    ]
+}
+\end{minted}
+
+We copy the public IP:
+\begin{minted}{powershell}
+$PublicIp="54.170.85.144"
+\end{minted}
+
+\subsection{Connecting to instance over
+SSH}\label{sec:connecting-to-instance-over-ssh}
+
+\begin{minted}{powershell}
+ssh ec2-user@$PublicIp 
+\end{minted}
+
+The first time you connect to an instance you'll get a warning:
+
+\begin{verbatim}
+The authenticity of host '54.78.220.233 (54.78.220.233)' can't be established.
+ECDSA key fingerprint is SHA256:8omkD5RLibZNgJJ/B7MAnL7IbEcrmCmIWFdQXbjJf60.
+Are you sure you want to continue connecting (yes/no)?
+\end{verbatim}
+
+Just type \texttt{yes} here. Your local SSH client is just confirming it
+hasn't seen this machine before. If a different key fingerprint shows
+for the same IP you'll get a warning, which means a machine has been
+changed for another.
+
+If you see something like the following then you're connected:
+
+\begin{verbatim}
+       __|  __|_  )
+       _|  (     /   Amazon Linux 2 AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-2/
+2 package(s) needed for security, out of 13 available
+Run "sudo yum update" to apply all updates.
+[ec2-user@ip-10-0-1-80 ~]$ 
+\end{verbatim}
+
+\section{EC2 instance termination}\label{ec2-instance-termination}
+
+Instances can be terminated when no longer needed using the command:
+
+\begin{verbatim}
+aws ec2 terminate-instances --instance-ids $InstanceId
+\end{verbatim}
+
+

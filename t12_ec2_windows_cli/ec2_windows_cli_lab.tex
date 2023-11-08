@@ -1,0 +1,61 @@
+\chapter{EC2 CLI (Windows)}
+
+Setting up Windows EC2 instance is very similar to that of a linux instance.
+
+\section{Windows Image IDs}
+
+We can use Systems Manager to launch an instance using the following
+syntax. Instead of giving an AMI directly we use \texttt{resolve:ssm:}
+to tell AWS to look this value up in SSM.
+
+\begin{minted}{powershell}
+# Look up available windows AMIs
+aws ssm get-parameters-by-path `
+--path /aws/service/ami-windows-latest `
+--query "Parameters[].Name"
+
+# run instance w/ specified Windows AMI
+aws ec2 run-instances `
+--subnet-id $SubnetId `
+--image-id resolve:ssm:/aws/service/ami-windows-latest/Windows_Server-2022-English-Full-Base `
+--instance-type t2.micro `
+--key-name MAIN_KEY `
+--security-group-ids $GroupId
+\end{minted}
+
+\section{Windows Password Data}
+\label{sec:windows-password-data}
+
+See:\\
+\url{https://docs.aws.amazon.com/cli/latest/reference/ec2/get-password-data.html}
+
+\begin{minted}{powershell}
+# Assume we have the instance id stored in $InstanceId
+
+aws ec2 get-password-data `
+--instance-id $InstanceId `
+--priv-launch-key file://~/.ssh/id_rsa
+\end{minted}
+
+\section{Lab exercise}
+
+Make sure you can login to the AWS Console.
+Then use the CLI to do the following:
+\begin{enumerate}
+\item Create a VPC \texttt{LAB\_VPC}, IP range 10.0.0.0/16.
+\item Create a Subnet \texttt{LAB\_SUBNET\_1} within your VPC, IP range 10.0.1.0/24.
+\item Turn on auto IP address assignment in the subnet.
+\item Create an Internet Gateway \texttt{LAB\_GATEWAY}.
+\item Attach the internet gateway to your VPC.
+\item Alter the route table to send traffic for anywhere \texttt{0.0.0.0/0} to the internet gateway.
+\item Create a security group \texttt{LAB\_GROUP}.
+\item Modify the security group to permit traffic inbound on SSH (22) and RDP (3389) protocols from anywhere \texttt{0.0.0.0/0}.
+\item Create an instance \texttt{LAB\_INSTANCE} to run Windows.
+\item Wait until the instance is running.
+\item Get the instance ID.
+\item Get the instance's public IP.
+\item Get the windows password data as shown in \autoref{sec:windows-password-data}.
+\item Use RDP to login to the instance.
+\end{enumerate}
+
+
