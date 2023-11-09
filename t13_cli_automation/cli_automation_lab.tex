@@ -1,0 +1,72 @@
+\chapter{CLI automation lab}
+
+
+In this week's lab we are going to learn how to capture information from the AWS CLI output, rather than doing so by hand.
+
+\section{JSON}
+
+AWS CLI outputs JSON by default as you have seen so far.
+Instead of manually copying and storing IDs, we can use our local PowerShell / Bash to capture this information for us.
+This will help later on when we can write scripts to automate some of this work for us.
+
+\subsection{JSON parsing in Powershell}
+
+We will use the example of \texttt{create-vpc}.
+\begin{minted}{powershell}
+# Run aws ec2 create-vpc but capture the output instead
+$Output = aws ec2 create-vpc --cidr-block 10.0.0.0/16
+
+# View the output
+$Output
+
+# Convert from JSON to PS objects
+$VpcInfo = $Output | ConvertFrom-Json
+
+# Pull out the VpcId using the dot notation
+$VpcId = $VpcInfo.Vpc.VpcId
+\end{minted}
+
+\subsubsection{Faster version}
+
+\begin{minted}{powershell}
+# Run aws ec2 create-vpc, capture output and convert to PS objects
+$VpcInfo = aws ec2 create-vpc --cidr-block 10.0.0.0/16| ConvertFrom-Json 
+
+# Pull out the VpcId using the dot notation
+$VpcId = $VpcInfo.Vpc.VpcId
+\end{minted}
+
+\subsection{Even faster version}
+
+If you know what the output of particular commands look like, and you're interested only in one parameter you can do the store immediately.
+Consider instead:
+\begin{minted}{powershell}
+$VpcId = (aws ec2 create-vpc --cidr-block 10.0.0.0/16 | ConvertFrom-Json).Vpc.VpcId
+\end{minted}
+
+\subsection{JSON parsing in Bash}
+
+Bash does not natively understand JSON but the \texttt{jq} utility does.
+
+\section{Lab exercise}
+
+Make sure you can login to the AWS Console.
+Then use the CLI to do the following \textbf{without manually copying any IDs or other information!}:
+\begin{enumerate}
+\item Create a VPC \texttt{LAB\_VPC}, IP range 10.0.0.0/16. Store the ID as \texttt{\$VpcId}. 
+\item Create a Subnet \texttt{LAB\_SUBNET\_1} within your VPC, IP range 10.0.1.0/24. Store the ID as \texttt{\$SubnetId}. 
+\item Turn on auto IP address assignment in the subnet.
+\item Create an Internet Gateway \texttt{LAB\_GATEWAY}. Store the ID as \texttt{\$GatewayId}. 
+\item Attach the internet gateway to your VPC.
+\item Get the route table ID and store it as \texttt{\$RouteTableId}. 
+\item Alter the route table to send traffic for anywhere \texttt{0.0.0.0/0} to the internet gateway.
+\item Create a security group \texttt{LAB\_GROUP} storing its ID as \texttt{\$GroupId}. 
+\item Modify the security group to permit traffic inbound on SSH (22) and RDP (3389) protocols from anywhere \texttt{0.0.0.0/0}.
+\item Create an instance \texttt{LAB\_INSTANCE} to run Linux. 
+\item Wait until the instance is running.
+\item Get the instance ID and store as \texttt{\$InstanceId}. 
+\item Get the instance's public IP and store as \texttt{\$PublicIp}. 
+\item Use SSH (linux) to login to the instance.
+\end{enumerate}
+
+

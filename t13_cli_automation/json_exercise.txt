@@ -1,0 +1,38 @@
+JSON PRACTICE EXERCISE
+======================
+
+For each JSON file, use Get-Content to load it.
+Pipe the resulting JSON text through ConvertFrom-Json to get PS objects.
+Use the dot notation to find the required value. 
+
+Example:
+$VpcInfo = Get-Content vpc.json | ConvertFrom-Json
+$VpcInfo.Vpc.VpcId [[ will print the VpcId ]]
+
+0.)
+Look at the structure of vpc.json, subnet.json and instance.json.
+
+1.)
+In vpc.json get the value of DhcpOptionsId to be dopt-0e49fce64f2659c15.
+
+2.) 
+In vpc.json, get the value of AssociationId to be vpc-cidr-assoc-0ca97e5098c76d163.
+
+3.)
+In subnet.json, get the SubnetId to be subnet-03d4cc960b21e4a19.
+
+4.)
+In subnet.json, get the AvailabilityZoneId to be euw1-az3.
+
+5.)
+In instance.json, get InstanceId.
+
+6.)
+In instance.json, get Public Ip address to be 54.154.227.67.
+
+7.)
+Use (Get-History).CommandLine | OutFile history.ps1 to get history!
+
+8.)
+Get at least 2 other pieces of info from each of the 3 files.
+
