@@ -1,0 +1,13 @@
+# S3 exercise
+
+Use aws s3 set of commands to: 
+
+1. Make a bucket called yourname-bucket
+2. List out the buckets you have. (should be at least 1) 
+3. Put at least 3 files into the bucket. 
+4. List out the bucket's contents. 
+5. Use the web console to upload at least 1 file. 
+6. In a new folder, sync the bucket contents to your folder. 
+7. Delete a file from the bucket (using aws s3 rm). 
+8. Re-sync (including deletion.) 
+

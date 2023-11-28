@@ -1,0 +1,101 @@
+\chapter{S3 integration}
+\label{ch:s3-integration}
+
+\section{Setup}\label{setup-1}
+
+Assume we have an S3 bucket and SNS topic located in a given region:
+
+\begin{verbatim}
+# S3 bucket and TOpic Name
+$BucketName="notifier-source-2"
+$TopicName="notifier-topic"
+
+# choose unique name
+aws s3api create-bucket --bucket $BucketName
+
+# can make bucket ARN (for later)
+$BucketArn = "arn:aws:s3:::$BucketName"
+
+# topic
+aws sns create-topic --topic-name $TopicName
+
+\end{verbatim}
+
+
+\section{Permissions}\label{permissions}
+
+S3 must be granted permissions to publish messages to the SNS topic.
+This permission is granted in a resource policy on the SNS topic.
+Unlike SQS, SNS has a default non-empty resource policy, which we will need to modify (not just overwrite!).
+
+\subsection{Policy template}
+
+\inputminted{json}{topic_policy_template.json}
+
+\subsection{Generating policy}\label{generating-policy}
+
+We can build our policy from a template JSON file
+\texttt{topic\_policy\_template.json}:
+
+\begin{verbatim}
+# read in the template file
+$NewPolicy = Get-Content topic_policy_template.json | ConvertFrom-Json
+
+# fill in the Topic ARN as the resource
+$NewPolicy.Statement[0].Resource=$TopicArn
+
+# fill in the S3 bucket ARN in the condition
+$NewPolicy.Statement[0].Condition.ArnEquals.'aws:SourceArn'=$BucketArn
+\end{verbatim}
+
+\subsection{Adding to existing policy}
+\label{adding-to-existing-policy}
+
+Next, we must get the existing policy which is itself a JSON encoded text attribute of the topic.
+
+\begin{verbatim}
+# read in the attributes
+$Attributes=(aws sns get-topic-attributes --topic-arn $TopicArn | ConvertFrom-Json)
+
+# get the existing policy as PowerShell object
+$Policy = $Attributes.Attributes.Policy | ConvertFrom-Json
+
+# add the statement from the New policy on to the existing policy
+# (the += operator means append to list)
+$Policy.Statement += $NewPolicy.Statement[0]
+
+# JSON encode the amended policy and output to file
+$Policy | ConvertTo-Json -Depth 99 | Out-File topic_policy.json -Encoding ascii
+\end{verbatim}
+
+\subsection{Applying amended policy}
+\label{applying-amended-policy}
+
+\begin{verbatim}
+aws sns set-topic-attribute --topic-arn $TopicArn --attribute-name Policy --attribute-value file://topic_policy.json
+\end{verbatim}
+
+\section{Setting up notification}\label{setting-up-notification}
+
+Notification configurations tell S3 to send events to SNS (and other destinations).
+A basic configuration template is:
+
+\inputminted{json}{notification_config_template.json}
+
+We will use Powershell to read in this file and make some changes
+
+\begin{verbatim}
+# read in the config file and convert to PSobject
+$NotificationConfig = Get-Content notification_config_template.json | ConvertFrom-Json
+
+# fill in the topic ARN
+$NotificationConfig.TopicConfigurations[0].TopicArn=$TopicArn
+
+# can modify other things as necessary!
+
+# re-write
+$NotificationConfig | ConvertTo-Json -Depth 99 | Out-File notification_config.json -Encoding ascii
+
+aws s3api put-bucket-notification-configuration --bucket $BucketName --notification-configuration file://notification_config.json
+\end{verbatim}
+

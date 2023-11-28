@@ -1,0 +1,155 @@
+\chapter{PaaS integration}
+\label{ch:paas-integration}
+
+\section{Integration}
+\label{integration}
+
+Successful integration of two services requires:
+
+\begin{description}
+\item[Identification]
+of the entities that need to communicate.
+\item[Permissions]
+to enable one service to invoke actions on the other.
+\item[Message formats]
+and transformations / settings that may be needed so our message arrives
+as intended.
+\end{description}
+
+\section{SQS Endpoints for SNS}\label{sqs-endpoints-for-sns}
+
+SNS is an important integration component along with SQS. We will study
+more advanced architectures later on, but for now: SNS can be used to
+deliver a message to an SQS queue.
+
+An SQS queue is subscribed as an endpoint to an SNS topic. There will
+normally be other subscribers: SQS queues and other endpoint types.
+
+\subsection{Setup}\label{setup}
+
+We setup the \texttt{lab-topic} and the \texttt{lab-queue}:
+
+\begin{verbatim}
+# Setup SNS topic
+$TopicArn=(aws sns create-topic --name lab-topic | ConvertFrom-Json).TopicArn
+
+# Setup SQS queue
+$QueueUrl=(aws sqs create-queue --queue-name lab-queue | ConvertFrom-Json).QueueUrl
+\end{verbatim}
+
+For testing, we may want to add an email (or other) subscription:
+
+\begin{verbatim}
+aws sns subscribe --topic-arn $TopicARN --protocol email `
+--notification-endpoint "someone@somewhere.com"
+#        your e-mail goes here ----^
+\end{verbatim}
+
+\subsection{Subscribing}\label{subscribing}
+
+Subscription is created using sqs protocol and the queue ARN (not URL) as Endpoint.
+
+\begin{verbatim}
+# Get QueueARN for URL
+$QueueArn=(aws sqs get-queue-attributes --queue-url $QueueUrl --attribute-names QueueArn | ConvertFrom-Json).Attributes.QueueArn
+
+# Subscribe the queue to the topic
+aws sns subscribe --topic-arn $TopicArn --protocol sqs --notification-endpoint $QueueArn  --attributes RawMessageDelivery=true 
+\end{verbatim}
+
+The \texttt{RawMessageDelivery} attribute means that the message will be passed directly as published to SNS into the queue.
+If this is omitted or set to false, the message will be wrapped in JSON that includes SNSmeta-data.
+You usually (in my opinion) don't need this. 
+To send a test message:
+
+\begin{verbatim}
+aws sns publish --topic-arn $TopicARN --message "XYZ"
+\end{verbatim}
+
+This will silently be dropped as SNS has no permission to send messages
+published to the topic to the SQS queue.
+
+\subsection{Policy}
+\label{policy}
+
+AWS permissions need to be modified to permit SNS to send a message to
+the SQS queue.
+
+\subsubsection{Policy definition}\label{policy-definition}
+
+First we need to define a policy for the \texttt{lab-queue} resource:
+Points to note:
+
+\begin{description}
+\item[Principal]
+here is the SNS service.
+\item[Action]
+is to allow the \texttt{sqs:SendMessage}
+\item[Resource]
+is the ARN of the Queue itself.
+\item[Condition]
+  needed to lock down the source topic.
+  Without the condition item, this policy would allow any SNS topic to send messages to the queue.
+  Here we require that the source of actin is the ARN of the topic.
+\end{description}
+
+\subsubsection{Generating attributes JSON}
+\label{generating-attributes-json}
+
+The policy is technically an attribute of the SQS queue.
+Attributes are specified in a JSON document input to \texttt{aws} \texttt{sqs}
+\texttt{set-queue-attributes}.
+
+Rather than writing the policy out, we can generate one and include it in a JSON file of attributes.
+Starting with the following template file named \texttt{queue\_policy\_template.json}:
+We can use PowerShell to fill in the ARNs:
+
+\begin{verbatim}
+# read the JSON policy file and convert to Powershell objects
+$Policy = Get-Content queue_policy_template.json | ConvertFrom-Json
+
+# modify for the correct ARNs
+$Policy.Statement[0].Resource=$QueueARN
+$Policy.Statement[0].Condition.ArnEquals.'aws:SourceArn'=$TopicARN
+# note we need to quote due to colon---------^
+\end{verbatim}
+
+We can now create the attributes object in PowerShell which we'll convert to our JSON attributes file:
+
+\begin{verbatim}
+# create hash with Policy with policy JSON *as string*
+$Attributes = @{ Policy=($Policy | ConvertTo-Json -Depth 99) }
+#         converts JSON to string--^
+
+# optional: see how the JSON looks when wrapped inside outer JSON
+$Attributes | ConvertTo-Json -Depth 99
+
+# save the attributes
+$Attributes | ConvertTo-Json -Depth 99 |  Out-File queue_attributes.json -Encoding ascii
+\end{verbatim}
+
+\subsubsection{Applying queue attributes}\label{applying-queue-attributes}
+
+\begin{verbatim}
+aws sqs set-queue-attributes --attributes file://queue_attributes.json --queue-url $QueueUrl
+\end{verbatim}
+
+\subsection{Testing}\label{testing}
+
+To again send a test message:
+
+\begin{verbatim}
+aws sns publish --topic-arn $TopicARN --message "XYZ"
+\end{verbatim}
+
+Which this time should appear on the SQS queue:
+
+\begin{verbatim}
+# receive the message
+$ReceivedMessage=(aws sqs receive-message --queue-url $QueueUrl | ConvertFrom-Json).Messages[0]
+
+# delete the message
+aws sqs delete-message --queue-url $QueueUrl --receipt-handle $ReceivedMessage.ReceiptHandle
+\end{verbatim}
+
+

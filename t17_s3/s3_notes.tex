@@ -1,0 +1,351 @@
+\chapter{S3}
+\label{ch:s3}
+
+\section{Object storage concepts}\label{object-storage-concepts}
+
+Object storage is comprised of \textbf{buckets} situated within \textbf{regions} that hold \textbf{objects} identified by \textbf{keys}.
+In more detail:
+
+\begin{description}
+\item[Bucket]
+is a high-level grouping of related objects. Similar concept to a
+database on a DBMS or a file share on a NAS. Buckets are identified by a
+name:
+
+\begin{itemize}
+\item
+  Note that bucket names must be globally unique across AWS.
+\end{itemize}
+\item[Region:]
+  each bucket is associated with a specific region.
+  Data never leaves that region unless manually transferred to another region.
+\item[Objects]
+  are pieces of data, aka files, stored in S3. These can be broken down
+  into:
+  \begin{description}
+  \item[Data:]
+    the actual content, e.g.~the image, music file, text document.
+    These are said to be \emph{opaque} to S3, meaning that S3 doesn't interpret or process the content.
+    It only stores and retrieves it for you.
+  \item[Metadata]
+    describes the object.
+    It consists of a series of key-value pairs.
+    Some it is default and system-defined, such as the date last modified.
+    You can define any other metadata tags you want.
+  \end{description}
+\item[Key:]
+  a key uniquely identifies each object within a bucket.
+  Each object has exactly one key mapping to it.
+  An object is uniquely identified within S3 by its bucket name, its key and optionally its version number.
+\end{description}
+
+\subsection{S3 URIs}\label{s3-uris}
+
+Buckets are identified by a so-called S3 URI in the form \texttt{s3://bucket-name-here}.
+Objects / files within buckets are identified in the form:
+
+\begin{itemize}
+\item
+  \texttt{s3://bucket-name/file1.pdf}
+\item
+  \texttt{s3://bucket-name/file2.pdf}
+\item
+  \texttt{s3://bucket-name/images/img1.jpg}
+\item
+  \texttt{s3://bucket-name/images/img2.png}
+\end{itemize}
+
+\subsection{Lack of hierarchy}\label{lack-of-hierarchy}
+
+Unlike filesystems, S3's namespace is flat.
+It does \emph{not} have any concept of hierarchy.
+There are no folders as such.
+
+However, we can infer hierarchy using common prefixes.
+Additionally, the S3 console and command-line tools map the slash character as a pseudo directory separator.
+
+\subsection{Access}\label{access}
+
+S3 storage can be accessed in a number of ways:
+
+\begin{description}
+\item[AWS console]
+  using point-and-click file operations.
+\item[AWS CLI]
+  allowing S3 operations from the command-line. Can be combined, scripted,
+scheduled etc easily.
+\item[AWS SDK]
+  where an application uses the AWS SDK library to directly read/write objects to/from S3 as required.
+\end{description}
+
+The AWS CLI and SDK make use of the web-service endpoint that provides a URL for any object in S3.
+This can be used directly by an application in a similar way to using an API, but most applications make use either of the CLI or the SDK.
+We will focus on the web console for now.
+
+\section{S3API Operations}
+\label{s3api-operations}
+
+The necessary commands are under the \texttt{s3} and \texttt{s3api} sub-commands.
+The \texttt{s3} commands are a simplified coherent set of commands that utilise the more general \texttt{s3api} command set.
+\href{https://aws.amazon.com/blogs/developer/leveraging-the-s3-and-s3api-commands/}{See AWS blog post about S3 and S3API}.
+
+The \texttt{s3api} commands are similar to the AWS commands we have met so far, in that they return JSON which can be used to create PowerShell objects using the \texttt{ConvertFrom-Json} cmdlet.
+Remember to use the inbuilt help as you try out these commands.
+
+
+\section{Resource naming}\label{resource-naming}
+
+On a cloud service, we need ways to unambiguously identify the resources
+we provision. On AWS, we use Amazon Resource Names, or ARNs. ARNs follow
+a common pattern:
+
+\begin{verbatim}
+arn:partition:service:region:account-id:resource-id
+arn:partition:service:region:account-id:resource-type/resource-id
+arn:partition:service:region:account-id:resource-type:resource-id
+\end{verbatim}
+
+\begin{description}
+\item[Partition]
+is normally just \texttt{aws} but can vary in certain regions.
+\item[Service]
+identifies the service. Today we will be using \texttt{s3}.
+\item[Region]
+specifies the region that the resource is located in. Some resources
+don't need a region to be specified.
+\item[Account-id]
+is the \textbf{ID number} of the account that the resource is owned by.
+This is different to the login name for the account.
+\item[Resource]
+specifies the specific resource. Sometimes the resource requires a type
+or hierarchy. This will vary according to the specific services.
+\end{description}
+
+ARNs appear in many places where one resource needs to make use of
+another, or where we want to control access to a specific resource.
+
+\subsection{Getting account ID number}\label{getting-account-id-number}
+
+Each AWS account has a numeric ID number.
+It can be found under Account Information in the Console and also via the CLI:
+
+\begin{verbatim}
+# basic command
+aws sts get-caller-identity
+
+# get ID as PS variable
+$AccountId = (aws sts get-caller-identity 
+              | ConvertFrom-Json).Account
+\end{verbatim}
+
+\subsection{S3 bucket ARN format}
+\label{s3-bucket-arn-format}
+
+ARNs for S3 buckets take the format \texttt{arn:aws:s3:::bucket-name}
+for the bucket \texttt{bucket-name}
+
+\section{Usage scenarios}
+\label{usage-scenarios}
+
+Using S3 solely as a cloud-based file store offers a number of
+possibilities. With appropriate scripting (and some permissions
+management) you could easily implement:
+
+\begin{itemize}
+\item
+  Managed file-transfer as a replacement for FTP, SFTP and similar
+  services:
+
+  \begin{itemize}
+  \item
+    Don's pizza has large plasma menu boards in each location. Menu
+    images are stored in an S3 bucket \texttt{dons-menu-images}. Graphic
+    designers upload new menu image files using a script that calls the
+    \texttt{s3api\ put-object}. Each menu board is driven by a raspberry
+    pi computer. It downloads the daily menu images using a script that
+    calls the \texttt{s3api\ get-object}.
+  \end{itemize}
+\item
+  A creative professional sends large files to clients that are too big
+  for e-mail. They have a script that uploads a file to S3, creating a
+  link for the client to use to download the image.
+\item
+  A retail store has a central host computer at its HQ that manages
+  pricing information for the chain. The stores each have a server that
+  controls the tills in that shop.
+
+  \begin{itemize}
+  \item
+    The central host places the master price file. Later the store
+    servers download this file from S3.
+  \item
+    The store servers upload sales transaction data for each day into
+    S3. The central host collects these files each day from S3 later on.
+  \end{itemize}
+\end{itemize}
+
+\section{Exercise}\label{exercise}
+
+\subsection{Basic S3 usage}\label{basic-s3-usage}
+
+Create an S3 bucket, populate it with some files, ensure that you can
+list and delete them. Confirm that you can list the S3 buckets you have.
+
+% \section{Static web hosting}\label{static-web-hosting}
+
+% S3 includes a simple inbuilt static web hosting system. Once it has been
+% enabled, the website will appear at the URL shown in the console. This
+% will look something like:
+
+% \begin{verbatim}
+% http://example-bucket.s3-website-eu-west-1.amazonaws.com
+% \end{verbatim}
+
+% The index document support allows a particular document to be returned
+% when no key is specified. This \emph{only} works at the root/top level
+% (remember S3 has no concept of a folder!) Other options you can explore
+% include traffic logging, custom error document support and redirect
+% configuration.
+
+% \subsection{Permissions}\label{permissions}
+
+% The website endpoint technically is allowing users other than the logged
+% in account holder to get content from the bucket. The bucket permissions
+% need to be updated by inserting a \emph{policy} containing a
+% \emph{statement} allowing them to do so. If this isn't done, a forbidden
+% error will occur. Here is a bucket policy for a bucket named
+% \texttt{example-bucket} to allow static web hosting:
+
+% \begin{Shaded}
+% \begin{Highlighting}[]
+% \FunctionTok{\{}
+%   \DataTypeTok{"Version"}\FunctionTok{:}\StringTok{"2012-10-17"}\FunctionTok{,}
+%   \DataTypeTok{"Statement"}\FunctionTok{:}\OtherTok{[}\FunctionTok{\{}
+%     \DataTypeTok{"Sid"}\FunctionTok{:}\StringTok{"PublicReadGetObject"}\FunctionTok{,}
+%         \DataTypeTok{"Effect"}\FunctionTok{:}\StringTok{"Allow"}\FunctionTok{,}
+%       \DataTypeTok{"Principal"}\FunctionTok{:} \StringTok{"*"}\FunctionTok{,}
+%       \DataTypeTok{"Action"}\FunctionTok{:}\OtherTok{[}\StringTok{"s3:GetObject"}\OtherTok{]}\FunctionTok{,}
+%       \DataTypeTok{"Resource"}\FunctionTok{:}\OtherTok{[}\StringTok{"arn:aws:s3:::example-bucket/*"}
+%       \OtherTok{]}
+%     \FunctionTok{\}}
+%   \OtherTok{]}
+% \FunctionTok{\}}
+% \end{Highlighting}
+% \end{Shaded}
+
+% Looking at the above policy, it contains one statement. Breaking it
+% down:
+
+% \begin{description}
+% \item[Sid]
+% names/labels the statement.
+% \item[Effect]
+% is either to \texttt{Allow} or \texttt{Deny}
+% \item[Principal]
+% is the AWS user that the statement is to apply to. The asterisk
+% \texttt{*} means any user, including an unknown one.
+% \item[Action]
+% is a \emph{list} of actions to allow. Here we allow the
+% \texttt{s3:GetObject} action.
+% \item[Resource]
+% is a \emph{list} of the AWS resources that this policy is to apply to.
+% \end{description}
+
+% \subsection{Limitations}\label{limitations}
+
+% S3 web hosting is very rudimentary (can't support SSL, custom domains).
+% CloudFront significantly expands web hosting capabilities (see later).
+
+% In this lab we will use the S3 object store to host a static website
+% without the need for using a web server (or even a VM).
+
+% \section{Website content}\label{website-content}
+
+% You will need a basic static website:
+
+% \begin{itemize}
+% \item
+%   If you can't get one, go to
+%   \url{https://github.com/peadargrant/test_static_website} and get the
+%   site by cloning the Git repository.
+% \item
+%   Open the \texttt{index.html} and confirm that all site elements are
+%   present.
+% \end{itemize}
+
+% \section{Static website on S3}\label{static-website-on-s3}
+
+% These instructions are quite sparse, and you will have to use AWS S3
+% (and other) resources to help you.
+
+% Follow the instructions at\\
+% \url{https://docs.aws.amazon.com/AmazonS3/latest/dev/HostingWebsiteOnS3Setup.html}\\
+% so that your site is world-visible at the S3 endpoint. Exceptions:
+
+% \begin{itemize}
+% \tightlist
+% \item
+%   In Step 3, upload all files from your static website rather than just
+%   one document.
+% \end{itemize}
+
+% \subsection{Bucket policy}\label{bucket-policy}
+
+% Bucket policies are a way to specify who (the principal) is allowed to
+% do what (the action) on a specific resource. For example:
+
+% \begin{Shaded}
+% \begin{Highlighting}[]
+%   \FunctionTok{\{}
+%    \DataTypeTok{"Version"}\FunctionTok{:}\StringTok{"2012-10-17"}\FunctionTok{,}
+%    \DataTypeTok{"Statement"}\FunctionTok{:}\OtherTok{[}\FunctionTok{\{}
+%     \DataTypeTok{"Sid"}\FunctionTok{:}\StringTok{"PublicReadForGetBucketObjects"}\FunctionTok{,}
+%          \DataTypeTok{"Effect"}\FunctionTok{:}\StringTok{"Allow"}\FunctionTok{,}
+%       \DataTypeTok{"Principal"}\FunctionTok{:} \StringTok{"*"}\FunctionTok{,}
+%        \DataTypeTok{"Action"}\FunctionTok{:}\OtherTok{[}\StringTok{"s3:GetObject"}\OtherTok{]}\FunctionTok{,}
+%        \DataTypeTok{"Resource"}\FunctionTok{:}\OtherTok{[}\StringTok{"arn:aws:s3:::example-bucket/*"}
+%        \OtherTok{]}
+%      \FunctionTok{\}}
+%    \OtherTok{]}
+% \FunctionTok{\}}
+% \end{Highlighting}
+% \end{Shaded}
+
+% \begin{itemize}
+% \item
+%   A policy consists of a number of statements.
+% \item
+%   Each statement has:
+
+%   \begin{itemize}
+%   \item
+%     An Sid to identify the statement
+%   \item
+%     An \emph{effect}, saying whether the statement allows or prohibits.
+%   \item
+%     A list of \emph{Principals} or AWS usernames that this statement
+%     applies to.
+%   \item
+%     A list of \emph{Action}s that the statement allows or denys.
+%   \item
+%     The resource (possibly including wildcards) that this statement
+%     applies to.
+%   \end{itemize}
+% \end{itemize}
+
+% \section{Cleanup}\label{cleanup}
+
+% Remember to delete resources you have finished using them. This lab
+% should cost nothing to do, but you should get into the habit of cleaning
+% things up to avoid unexpected surprises. \# S3
+
+% \subsection{Notes}\label{notes}
+
+% \href{s3_notes.pdf}{S3 notes}
+
+\subsection{Resources}\label{resources}
+
+\href{https://docs.aws.amazon.com/s3/index.html}{S3 dev guide}
+
+
+
