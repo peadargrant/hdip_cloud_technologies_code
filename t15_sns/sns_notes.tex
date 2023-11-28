@@ -1,0 +1,257 @@
+\chapter{Notification Services: SNS}
+\label{ch:sns}
+  
+\section*{Required reading}\label{required-reading}
+
+\begin{enumerate}
+\item
+  \url{https://docs.aws.amazon.com/sns/latest/dg/welcome.html}
+\item
+  \url{https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html}
+\end{enumerate}
+
+\section{Use cases}\label{use-cases}
+
+\begin{itemize}
+\item
+  Sending end-user e-mails, push notifications and SMS messages to
+  individual or groups of users.
+\item
+  Notifying or triggering actions when \textbf{events} occur in parts of
+  a system.
+\end{itemize}
+
+\subsection{Asynchronous processes}\label{asynchronous-processes}
+
+\begin{description}
+\item[Synchronous]
+process is where the requestor makes a request, waits for it to
+complete, receives the results (if any) before continuing.
+\item[Asynchronous]
+process is where the requestor makes a request and continues on working
+whilst its request is being processed. Results are returned either by
+polling or callback.
+\end{description}
+
+\section{Simple notification service
+(SNS)}\label{simple-notification-service-sns}
+
+SNS is an \textbf{asynchronous} notification service. It is useful for
+both system-to-system and system-to-user communications. \autoref{fig:sns-components} shows the key
+components of SNS.
+
+\autoimage{notification_system}{Notification system}{notification-system}
+
+The key unit of SNS is the \textbf{topic} to which two types of client
+connect:
+
+\begin{description}
+\item[Publisher]
+wishes to send message to a number of subscribers via the topic. Any
+number of publishers per topic (within limits).
+\item[Subscribers]
+wish to be notified of messages sent to the topic. SNS \textbf{pushes}
+messages to subscribers. Subscriptions to a single topic can be in a
+number of different forms. Any number of subscribers per topic (within
+limits).
+\end{description}
+
+\subsection{Properties}\label{properties}
+
+There are some important properties that distinguish SNS from queueing
+systems (like SQS):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Messages always attempted to be delivered to all topic subscribers
+  (fan-out, ).
+\item
+  Topic subscribers are inhomogeneous (not all the same) and may process
+  received message in different ways.
+\item
+  No persistence. Message received by whatever subscribers are present
+  when message arrives. No ``catch-up''.
+\end{enumerate}
+
+\subsection{Topic creation}\label{topic-creation}
+
+\begin{verbatim}
+# create topic
+aws sns create-topic --name my-topic
+
+# or, better:
+$TopicArn=(aws sns create-topic --name my-topic | ConvertFrom-Json).TopicArn
+\end{verbatim}
+
+\subsection{Naming}\label{naming}
+
+Amazon Resource Names (ARNs) are the canonical naming format for SNS
+topics. Format:
+
+\begin{verbatim}
+arn:aws:sns:eu-west-1:637146340431:my-topic
+|   |   |   |         |            |
+1   2   3   4         5            6
+\end{verbatim}
+
+Components:
+
+\begin{enumerate}
+\item
+  All ARNs begin with \texttt{arn}.
+\item
+  \textbf{Partition} always \texttt{aws} unless \texttt{aws-cn} (China)
+  or \texttt{aws-us-gov} GovCloud.
+\item
+  \textbf{Service} here \texttt{sns}
+\item
+  \textbf{Region} as per your default
+\item
+  \textbf{Account ID} number
+\item
+  \textbf{Topic name} as entered
+\end{enumerate}
+
+If you have the required information you can construct the ARN for any
+SNS topic.
+
+\subsection{Listing topics}\label{listing-topics}
+
+\begin{verbatim}
+# list of topic ARNs
+aws sns list-topics
+
+# list of topic ARNs as PowerShell list
+$Topics=(aws sns list-topics | ConvertFrom-Json).Topics
+\end{verbatim}
+
+\subsection{Deleting topics}\label{deleting-topics}
+
+\begin{verbatim}
+# assume $TopicArn holds the topic ARN
+
+aws sns delete-topic --topic-arn $TopicArn
+\end{verbatim}
+
+\subsection{SNS clients}\label{sns-clients}
+
+SNS clients come in the form of publishers and subscribers, .
+
+We will first meet subscribers and then publishers.
+
+\section{Subscribers}\label{subscribers}
+
+Subscribers to a topic can be managed by the \texttt{subscribe} and
+\texttt{unsubscribe} commands. Different types of subscribers possible
+to a topic:
+
+\autoimage{sns_clients}{SNS clients}{sns-clients}
+
+
+\begin{description}
+\item[Machine-to-human:]
+email, sms
+\item[Machine-to-machine (generic):]
+email-json, http, https
+\item[Other AWS services:]
+application, sqs, lambda
+\end{description}
+
+\subsection{Subscribing}\label{subscribing}
+
+Subscribing requires a topic ARN, protocol and usually an endpoint.
+
+\begin{verbatim}
+# full info on command options
+aws sns subscribe help
+
+# assume $TopicArn holds ARN for topic
+
+# subscribe to e-mail 
+aws sns subscribe `
+--topic-arn $TopicArn `
+--protocol email ` # also try email-json to see difference
+--notification-endpoint "mail@mydomain.ie"
+--return-subscription-arn
+# may be a confirmation step required
+
+# see help for other formats
+\end{verbatim}
+
+\subsection{Subscription ARN}\label{subscription-arn}
+
+Each subscription itself has an ARN, based on the topic ARN. Example:
+
+\begin{verbatim}
+arn:aws:sns:eu-west-1:637116340434:my-topic:74b543bc-0eab-46ea-81c1-0a654a6fb236
+1   2   3   4         5            6        7
+\end{verbatim}
+
+The first 6 components are identical to the topic ARN. The last
+component (7) identifies the subscription.
+
+\subsection{Checking if confirmed}\label{checking-if-confirmed}
+
+\begin{verbatim}
+aws sns get-subscription-attributes  --subscription-arn $SubscriptionArn
+\end{verbatim}
+
+Check output of \texttt{get-subscription-attributes} for
+\texttt{PendingConfirmation}.
+
+\subsection{Unsubscribing}\label{unsubscribing}
+
+Unsubscribing requires the subscription ARN only:
+
+\begin{verbatim}
+aws sns unsubscribe --subscription-arn $SubscriptionArn
+\end{verbatim}
+
+\section{Publishing}\label{publishing}
+
+Messages are \emph{published} to a specific topic and are delivered to
+subscribers.
+
+\begin{verbatim}
+# send message to topic 
+aws sns publish --message "hello there" --topic-arn $TopicArn
+\end{verbatim}
+
+
+\section{SNS Exercise}
+\label{sec:sns-exercise}
+
+For the following exercise, attempt to do as much as possible using the command-line interface.
+Use the inbuilt help to discover the required commands.
+Document the required commands in your notes for each step.
+
+\begin{enumerate}
+\item
+  Create an SNS topic named \texttt{lab-sns-test}.
+\item
+  Add two e-mail subscribers (e.g.~your student and personal email).
+
+  \begin{itemize}
+  \item
+    Notice how SNS deals with subscription confirmation! Confirm
+    \emph{one} of the subscriptions only for now.
+  \end{itemize}
+\item
+  Send a test message to the topic.
+
+  \begin{itemize}
+  \item
+    Is it received by all endpoints?
+  \item
+    Confirm the other subscription.
+  \item
+    Does the message now send to the second subscription? Does your
+    finding agree with the documentation?
+  \item
+    Now try a new test message (with different content) and not what
+    happens.
+  \end{itemize}
+\end{enumerate}
+
+
