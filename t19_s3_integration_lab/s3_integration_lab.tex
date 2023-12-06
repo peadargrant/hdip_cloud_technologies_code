@@ -1,0 +1,23 @@
+\chapter{S3 integration lab [ASYNC]}
+\label{ch:s3-integration-lab}
+
+Construct the following items:
+
+\begin{enumerate}
+\item S3 bucket
+\item SNS topic
+\item 2x SQS queue
+\end{enumerate}
+
+Using as much of the CLI as you can (with help from the GUI):
+
+\begin{enumerate}
+\item Run at least 2 instances of \texttt{consumer.ps1}, with at least one pointed at each queue.
+\item Confirm that sending messages to the queue works.
+\item Subscribe an e-mail address to the SNS topic.
+\item Subscribe the queues to the SNS topic.
+\item Setup permissions to permit the topic to send to the queues.
+\item Setup permissions to let the S3 bucket publish notifications to the SNS topic.
+\item Configure the S3 bucket notification to send all create events to the SNS topic.
+\item Test using the \texttt{aws s3} and/or \texttt{aws s3api} commands.
+\end{enumerate}
