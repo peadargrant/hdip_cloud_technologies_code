@@ -1,0 +1,27 @@
+\chapter{Security}
+\label{ch:security}
+
+\section{EC2 instance security}
+\label{ec2-instance-security}
+
+ec2-user account has root / administrator privilages.
+
+By default:
+
+\begin{itemize}
+\item
+  Linux: Inject public key as previously stored in AWS into ec2-user
+  account
+\item
+  Windows: Random password to encrypt our key
+\end{itemize}
+
+Reasons to \emph{not} set a password:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Avoid brute force cracking attempts.
+\item
+  Avoid need to enforce complexity of passwords.
+\end{enumerate}

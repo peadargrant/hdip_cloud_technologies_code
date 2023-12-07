@@ -1,0 +1,15 @@
+EC2 instance security
+=====================
+
+ec2-user account has root / administrator privilages. 
+
+By default:
+
+- Linux: Inject public key as previously stored in AWS into ec2-user account
+
+- Windows: Random password to encrypt our key
+
+Reasons to *not* set a password:
+
+1. Avoid brute force cracking attempts.
+2. Avoid need to enforce complexity of passwords. 

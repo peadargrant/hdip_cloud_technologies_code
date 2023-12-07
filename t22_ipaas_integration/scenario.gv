@@ -1,0 +1,23 @@
+digraph G {
+
+	layout=fdp;
+	rankdir=LR;
+	compound=true;
+
+	subgraph cluster_paas {
+		label="PaaS resources";
+		labeljust=l;
+		Q [label="SQS Queue", shape="rectangle"];
+		B [label="S3 Bucket", shape="rectangle"];
+	}
+
+	subgraph cluster_ec2 {
+		label="EC2 instance"
+		QP [label="qprocessor.py", shape="rectangle"];
+		SU [label="qprocessor.service", shape="rectangle"];
+		SU->QP;
+	}
+
+	QP -> Q;
+	QP -> B;
+}
