@@ -1,0 +1,29 @@
+HDip Cloud Technologies
+CA1
+
+Weight: 30% of Module
+Due: As displayed on Moodle.
+
+In this CA you will demonstrate basic Cloud Infrastructure skills.
+
+You should provide a (max) 4 page PDF with information / screenshots as required below.
+
+# Aim (10%)
+Brief description of the applications / services you intend to deploy.
+
+# Identified needs (10%)
+What direct AWS resources do you need to install the applications / services identified in the Aims.
+
+# Architectural diagram (30%)
+You should provide a clear diagram of the AWS infrastructure you intend to deploy.
+
+# System demonstration (30%)
+Provide clear evidence (screenshots, video recording, output) of your system working. 
+
+# Command-line 
+You should attempt at least some of the setup using the AWS CLI.
+Provide evidence of this (scripts, or PowerShell history files) in separate files.
+
+# Reflection (10%)
+What changes would you make if doing this again? 
+
